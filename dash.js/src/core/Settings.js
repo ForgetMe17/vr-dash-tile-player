@@ -382,8 +382,13 @@ function Settings() {
      * @ignore
      */
     const defaultSettings = {
-        id: null,
-        count: null,
+        info: {
+            id: null,
+            count: null,
+            face: null,
+            row: null,
+            col: null
+        },
         debug: {
             logLevel: Debug.LOG_LEVEL_WARNING
         },

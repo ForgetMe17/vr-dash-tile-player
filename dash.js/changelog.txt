@@ -6,8 +6,16 @@ Base version {
 
 Modifications {
 
-    Add: [Settings.js] { Settings.id; Settings.count; };
+    Add: [Settings.js] { 
+        info: {
+            id: null,
+            count: null,
+            face: null,
+            row: null,
+            col: null
+        } 
+    };
     Add: [AbrController.js] AbrController.getSettings();
-    Add: [BufferController.js] BufferController.triggerEvent(...) { payload.id = settings.get().id; payload.count = settings.get().count; };
+    Add: [BufferController.js] BufferController.triggerEvent(...) { payload.info = settings.get().info; };
 
 }

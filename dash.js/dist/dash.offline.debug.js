@@ -6122,8 +6122,13 @@ function Settings() {
      * @ignore
      */
     var defaultSettings = {
-        id: null,
-        count: null,
+        info: {
+            id: null,
+            count: null,
+            face: null,
+            row: null,
+            col: null
+        },
         debug: {
             logLevel: _coreDebug2['default'].LOG_LEVEL_WARNING
         },

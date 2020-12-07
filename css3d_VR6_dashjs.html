@@ -109,8 +109,13 @@
 
 							// Don't use dash.js default rules
 							players[count].updateSettings({
-								'id': contents.tiles[i][j][k].id,
-								'count': count,
+								'info': {
+									'id': contents.tiles[i][j][k].id,
+									'count': count,
+									'face': i,
+									'row': j,
+									'col': k 
+								},
 								'streaming': {
 									'abr': {
 										'useDefaultABRRules': false

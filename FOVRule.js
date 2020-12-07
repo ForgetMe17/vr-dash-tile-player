@@ -28,8 +28,8 @@ function FOVRuleClass() {
         }
 
         // Compute the bitrate according to FOV
-        var id = abrController.getSettings().id;
-        var priorite = computeQualities(id);  // From 0 to 100
+        var info = abrController.getSettings().info;
+        var priorite = computeQualities(info);  // From 0 to 100
 
         // Ask to switch to the bitrate according to FOV
         switchRequest.quality = 0;
@@ -47,14 +47,14 @@ function FOVRuleClass() {
         return switchRequest;
     }
 
-    function computeQualities(id) {
+    function computeQualities(info) {
 
-        if (!id) {
+        if (!info.id || !info.count || !info.face || !info.row || !info.col) {
             console.log("Lack of ID when computing qualities!!!");
             return 0;
         }
     
-        if ( id.slice(6, 7) == '1' ) {
+        if ( info.face == '1' ) {
             if ( lat == 0 && lon % 360 == 180 ) {
                 return 100;
             } else {
@@ -80,7 +80,7 @@ function FOVRuleClass() {
             }
         }
 
-        if ( id.slice(6, 7) == '2' ) {
+        if ( info.face == '2' ) {
             if ( lat == 0 && lon % 360 == 0 ) {
                 return 100;
             } else {
@@ -106,7 +106,7 @@ function FOVRuleClass() {
             }
         }
 
-        if ( id.slice(6, 7) == '3' ) {
+        if ( info.face == '3' ) {
             if ( lat >= 85 ) {
                 return 100;
             } else if ( lat >= 80 ) {
@@ -120,7 +120,7 @@ function FOVRuleClass() {
             }
         }
 
-        if ( id.slice(6, 7) == '4' ) {
+        if ( info.face == '4' ) {
             if ( lat <= -85 ) {
                 return 100;
             } else if ( lat <= -80 ) {
@@ -134,7 +134,7 @@ function FOVRuleClass() {
             }
         }
 
-        if ( id.slice(6, 7) == '5' ) {
+        if ( info.face == '5' ) {
             if ( lat == 0 && lon % 360 == 90 ) {
                 return 100;
             } else {
@@ -160,7 +160,7 @@ function FOVRuleClass() {
             }
         }
 
-        if ( id.slice(6, 7) == '6' ) {
+        if ( info.face == '6' ) {
             if ( lat == 0 && lon % 360 == 270 ) {
                 return 100;
             } else {

@@ -845,8 +845,7 @@ function BufferController(config) {
         payload.sender = instance;
         payload.mediaType = type;
         payload.streamId = streamInfo.id;
-        payload.id = settings.get().id;
-        payload.count = settings.get().count;
+        payload.info = settings.get().info;
         eventBus.trigger(eventType, payload);
     }
 
