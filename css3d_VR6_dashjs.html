@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+    <head>
+
+		<meta charset="utf-8"/>
+		<title>css3d_VR6_dashjs</title>
+		
+		<script src="./dash.js/dist/dash.all.debug.js"></script>
+		<script src="HighestBitrateRule.js" class="code"></script>
+		<script src="FOVRule.js" class="code"></script>
+
+		<script>
+			// Global variables
+			var players = {};  // Container for players, which is easy for us to operate in them.
+			var buffer_empty_flag = {};  // Flags for players, showing whether the player is frozen or not.
+			var lon = 90, lat = 0;  // Longitude and latitude in spherical coordinates.
+			var contents = {};  // Contents from JSON file
+		</script>
+
+		<script>
+			// Reading json file
+			function getContents(url, callback) {
+				var xhr = new XMLHttpRequest();
+				xhr.open("GET", url, true);
+				xhr.onload = callback
+				xhr.send();
+			}
+
+			function openJSON(url) {
+				getContents(url, function() {
+					contents = JSON.parse(this.responseText);
+				});
+			}
+			
+			openJSON("../ball_video/ball_video.json");  // ----CHANGABLE----
+		</script>
+
+        <script class="code">
+			// Pause in all the players
+			function pause_all() {
+				var count = 0;
+				for (let i = 0; i < contents.face; i++) {
+					for (let j = 0; j < contents.row; j++) {
+						for (let k = 0; k < contents.col; k++) {
+							players[count].pause();
+							count++;
+							console.log("Player pauses.");
+						}
+					}
+				}
+			}
+
+			// Play in all the players
+			function play_all() {
+				var count = 0;
+				for (let i = 0; i < contents.face; i++) {
+					for (let j = 0; j < contents.row; j++) {
+						for (let k = 0; k < contents.col; k++) {
+							players[count].play();
+							count++;
+							console.log("Player plays.");
+						}
+					}
+				}
+			}
+
+			// Triggered when any player's buffer is empty, which to stop all the players and wait for rebuffering.
+			function buffer_empty_event(e) {
+				buffer_empty_flag[e.count] = true;
+				pause_all();
+			}
+
+			// Triggered when any player's buffer is loaded (again), which to start all the players when all-set.
+			function buffer_loaded_event(e) {
+				if (buffer_empty_flag[e.count] == true) {
+					buffer_empty_flag[e.count] = false;
+					var count = 0;
+					for (let i = 0; i < contents.face; i++) {
+						for (let j = 0; j < contents.row; j++) {
+							for (let k = 0; k < contents.col; k++) {
+								if (buffer_empty_flag[count] == true) {
+									return;
+								}
+								count++;
+								if (i == contents.face - 1 && j == contents.row - 1 && k == contents.col - 1) {
+									play_all();
+								}
+							}
+						}
+					}
+				}
+			}
+
+			// Initialize when loading the videos
+            function initial() {
+				var video, url;
+				var count = 0;
+                for (let i = 0; i < contents.face; i++) {
+					for (let j = 0; j < contents.row; j++) {
+						for (let k = 0; k < contents.col; k++) {
+							video = document.querySelector("#" + contents.tiles[i][j][k].id);
+							players[count] = new dashjs.MediaPlayer().create();
+							url = contents.baseUrl + contents.tiles[i][j][k].src;
+							// url = "http://222.20.77.111/dash/dash.mpd";
+							// url = "https://dash.akamaized.net/akamai/streamroot/050714/Spring_4Ktest.mpd";
+							buffer_empty_flag[count] = false;
+
+							// Don't use dash.js default rules
+							players[count].updateSettings({
+								'id': contents.tiles[i][j][k].id,
+								'count': count,
+								'streaming': {
+									'abr': {
+										'useDefaultABRRules': false
+									}
+								}
+							});
+							// Add my custom quality switch rule, look at [].js to know more about the structure of a custom rule  // ----CHANGABLE----
+							// players[count].addABRCustomRule('qualitySwitchRules', 'FOVRule', FOVRule);
+							players[count].addABRCustomRule('qualitySwitchRules', 'HighestBitrateRule', HighestBitrateRule);
+
+							// Turn on the event listeners and add actions for triggers 
+							players[count].on(dashjs.MediaPlayer.events["BUFFER_EMPTY"],buffer_empty_event);
+							players[count].on(dashjs.MediaPlayer.events["BUFFER_LOADED"],buffer_loaded_event);
+
+							// Initializing
+							players[count].initialize(video, url, false);
+							count++;
+						}
+					}
+                }
+            }
+		</script>
+
+		<style>
+			body {
+				background-color: #000000;
+			}
+		</style>
+		
+	</head>
+	
+    <body>
+
+		<div id="container"></div>
+
+		<script type="module">
+			import * as THREE from './three.js/build/three.module.js';
+			import { CSS3DRenderer, CSS3DObject } from './three.js/jsm/renderers/CSS3DRenderer.js';
+			
+			var camera, scene, renderer;
+			var target = new THREE.Vector3();
+			// var lon = 90, lat = 0;
+			lon = 90, lat = 0;
+			var phi = 0, theta = 0;
+			var pointerX, pointerY;
+
+			var Element = function ( i, j, k ) {
+
+				var div = document.createElement( 'div' );
+				div.style.width = contents.tiles[i][j][k].width;
+				div.style.height = contents.tiles[i][j][k].height;
+				div.style.backgroundColor = '#000';
+
+				var myvideo = document.createElement( 'video' );
+				var mysource = document.createElement( 'source' );
+				myvideo.style.width = contents.tiles[i][j][k].width;
+				myvideo.style.height = contents.tiles[i][j][k].height;
+				myvideo.style.border = '0px';
+				myvideo.id = contents.tiles[i][j][k].id;
+				if (myvideo.id != "video_1_1_1") {
+					myvideo.volume = 0;
+				}
+                // myvideo.autoplay = true;
+				// mysource.src = [ 'http://localhost/ball_video/', id, '/', id, '.mpd' ].join( '' );
+				// mysource.type = 'application/dash+xml';
+				myvideo.appendChild( mysource );
+				div.appendChild( myvideo );
+
+				var object = new CSS3DObject( div );
+				object.position.set( contents.tiles[i][j][k].x, contents.tiles[i][j][k].y, contents.tiles[i][j][k].z );
+				object.rotation.set( contents.tiles[i][j][k].rx, contents.tiles[i][j][k].ry, contents.tiles[i][j][k].rz);
+
+				return object;
+
+			};
+
+			init();
+			animate();
+
+			function init() {
+
+				var container = document.getElementById( 'container' );
+
+				camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 5000 );
+				// camera.position.set( 500, 350, 750 );
+
+				scene = new THREE.Scene();
+
+				renderer = new CSS3DRenderer();
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				container.appendChild( renderer.domElement );
+
+				var group = new THREE.Group();
+				for (let i = 0; i < contents.face; i++) {
+					for (let j = 0; j < contents.row; j++) {
+						for (let k = 0; k < contents.col; k++) {
+							group.add( new Element( i, j, k ) );	
+						}						
+					}					
+				}
+				scene.add( group );
+
+                document.body.style.touchAction = 'none';
+				document.body.addEventListener( 'pointerdown', onPointerDown, false );
+				document.addEventListener( 'wheel', onDocumentMouseWheel, false );
+				window.addEventListener( 'resize', onWindowResize, false );
+
+			}
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+            function onPointerDown( event ) {
+
+				if ( event.isPrimary === false ) return;
+
+				pointerX = event.clientX;
+				pointerY = event.clientY;
+
+				document.addEventListener( 'pointermove', onPointerMove, false );
+				document.addEventListener( 'pointerup', onPointerUp, false );
+
+			}
+
+			function onPointerMove( event ) {
+
+				if ( event.isPrimary === false ) return;
+
+				lon -= ( event.clientX - pointerX ) * 0.1;
+				lat += ( event.clientY - pointerY ) * 0.1;
+
+				pointerX = event.clientX;
+				pointerY = event.clientY;
+
+			}
+
+			function onPointerUp() {
+
+				if ( event.isPrimary === false ) return;
+
+				document.removeEventListener( 'pointermove', onPointerMove );
+				document.removeEventListener( 'pointerup', onPointerUp );
+
+			}
+
+			function onDocumentMouseWheel( event ) {
+
+				var fov = camera.fov + event.deltaY * 0.05;
+
+				camera.fov = THREE.MathUtils.clamp( fov, 10, 75 );
+
+				camera.updateProjectionMatrix();
+
+			}
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				// lon += 0.1;
+				lat = Math.max( - 85, Math.min( 85, lat ) );
+				phi = THREE.MathUtils.degToRad( 90 - lat );
+				theta = THREE.MathUtils.degToRad( lon );
+
+				target.x = Math.sin( phi ) * Math.cos( theta );
+				target.y = Math.cos( phi );
+				target.z = Math.sin( phi ) * Math.sin( theta );
+
+				// console.log([ 'lon: ', lon]);
+				// console.log([ 'lat: ', lat]);
+
+				camera.lookAt( target );
+
+				renderer.render( scene, camera );
+
+			}
+		</script>
+
+		<div style="z-index: 999; position: absolute; height: 100px; width: 200px;">
+			<button onclick="initial();">Load</button>
+			<button onclick="play_all();">play</button>
+			<button onclick="pause_all();">pause</button>
+        </div>
+        
+	</body>
+	
+</html>

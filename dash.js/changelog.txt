@@ -1,0 +1,13 @@
+Base version {
+
+    dash.js v3; 
+
+}
+
+Modifications {
+
+    Add: [Settings.js] { Settings.id; Settings.count; };
+    Add: [AbrController.js] AbrController.getSettings();
+    Add: [BufferController.js] BufferController.triggerEvent(...) { payload.id = settings.get().id; payload.count = settings.get().count; };
+
+}
