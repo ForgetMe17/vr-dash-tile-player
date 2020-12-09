@@ -34,8 +34,9 @@
 				contents = {};
 				getContents(url, function() {
 					contents = JSON.parse(this.responseText);
+					isChanged = true;
+					document.getElementById('json').value += " (Loaded!)";
 				});
-				isChanged = true;
 			}
 
 			// Read default json file if json is unavailable, then change the srcs
@@ -43,16 +44,17 @@
 				contents = {};
 				getContents('./default.json', function() {
 					contents = JSON.parse(this.responseText);
-				});
-				let urls = document.getElementById("url").value.split(/[(\n)\n]+/);	
-				for (let i = 0; i < contents.face; i++) {
-					for (let j = 0; j < contents.row; j++) {
-						for (let k = 0; k < contents.col; k++) {
-							contents.tiles[i][0][0].src = (i * contents.row * contents.col + j * contents.col + k) < urls.length ? urls[i] : urls[urls.length - 1];
+					let urls = document.getElementById("url").value.split(/[(\n)\n]+/);	
+					for (let i = 0; i < contents.face; i++) {
+						for (let j = 0; j < contents.row; j++) {
+							for (let k = 0; k < contents.col; k++) {
+								contents.tiles[i][j][k].src = (i * contents.row * contents.col + j * contents.col + k) < urls.length ? urls[i * contents.row * contents.col + j * contents.col + k] : urls[urls.length - 1];
+							}
 						}
 					}
-				}
-				isChanged = true;
+					isChanged = true;
+					document.getElementById('url').value += " (Loaded!)";
+				});
 			}
 		</script>
 
@@ -142,9 +144,20 @@
 									}
 								}
 							});
-							// Add my custom quality switch rule, look at [].js to know more about the structure of a custom rule  // ----CHANGABLE----
-							// players[count].addABRCustomRule('qualitySwitchRules', 'FOVRule', FOVRule);
-							players[count].addABRCustomRule('qualitySwitchRules', 'HighestBitrateRule', HighestBitrateRule);
+							// Add my custom quality switch rule, look at [].js to know more about the structure of a custom rule
+							let index = document.getElementById("rule").selectedIndex;
+							let selectedRule = document.getElementById("rule").options[index].text;
+							switch (selectedRule) {
+								case "FOVRule":
+									players[count].addABRCustomRule('qualitySwitchRules', 'FOVRule', FOVRule);
+									break;
+								case "HighestBitrateRule":
+									players[count].addABRCustomRule('qualitySwitchRules', 'HighestBitrateRule', HighestBitrateRule);
+									break;
+								default:
+									players[count].addABRCustomRule('qualitySwitchRules', 'FOVRule', FOVRule);
+									break;
+							}
 
 							// Turn on the event listeners and add actions for triggers 
 							players[count].on(dashjs.MediaPlayer.events["BUFFER_EMPTY"],buffer_empty_event);
@@ -325,7 +338,7 @@
 			}
 		</script>
 
-		<div style="z-index: 999; height: 100px; width: 200px;">
+		<div style="z-index: 999; height: 22px; width: 200px;">
 			<button id="Link" onclick="document.getElementById('json').value != '' ? openJSON(document.getElementById('json').value) : openURLs();">Link</button>
 			<button id="Load" onclick="initial();">Load</button>
 			<button id="Play" onclick="play_all();">Play</button>
@@ -335,8 +348,13 @@
 		<div style="z-index: 999; color: #ffffff;">
 			<br>JSON(Empty then use the URLs below):<br>
 			<textarea id="json" rows="1" cols="100">../ball_video/ball_video.json</textarea>			
-			<br>URL(Empty then use the URLs in JSON):<br>
+			<br>URL(Used when JSON is empty):<br>
 			<textarea id="url" rows="6" cols="100"></textarea>
+			<br>
+			<select id="rule">
+				<option value ="FOVRule">FOVRule</option>
+				<option value ="HighestBitrateRule">HighestBitrateRule</option>
+			</select>
 		</div>
         
 	</body>
