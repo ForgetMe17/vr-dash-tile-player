@@ -17,6 +17,7 @@
 			var buffer_empty_flag = {};  // Flags for players, showing whether the player is frozen or not.
 			var lon = 90, lat = 0;  // Longitude and latitude in spherical coordinates.
 			var contents = {};  // Contents from JSON file
+			var isChanged = false;  // Trigger the reinitialization of three.js
 		</script>
 
 		<script>
@@ -28,25 +29,43 @@
 				xhr.send();
 			}
 
+			// Read json file if json is available
 			function openJSON(url) {
+				contents = {};
 				getContents(url, function() {
 					contents = JSON.parse(this.responseText);
 				});
+				isChanged = true;
 			}
-			
-			openJSON("../ball_video/ball_video.json");  // ----CHANGABLE----
+
+			// Read default json file if json is unavailable, then change the srcs
+			function openURLs() {
+				contents = {};
+				getContents('./default.json', function() {
+					contents = JSON.parse(this.responseText);
+				});
+				let urls = document.getElementById("url").value.split(/[(\n)\n]+/);	
+				for (let i = 0; i < contents.face; i++) {
+					for (let j = 0; j < contents.row; j++) {
+						for (let k = 0; k < contents.col; k++) {
+							contents.tiles[i][0][0].src = (i * contents.row * contents.col + j * contents.col + k) < urls.length ? urls[i] : urls[urls.length - 1];
+						}
+					}
+				}
+				isChanged = true;
+			}
 		</script>
 
         <script class="code">
 			// Pause in all the players
 			function pause_all() {
-				var count = 0;
+				let count = 0;
 				for (let i = 0; i < contents.face; i++) {
 					for (let j = 0; j < contents.row; j++) {
 						for (let k = 0; k < contents.col; k++) {
 							players[count].pause();
 							count++;
-							console.log("Player pauses.");
+							console.log("Player_" + i + "_" + j + "_" + k + " pauses.");
 						}
 					}
 				}
@@ -54,13 +73,13 @@
 
 			// Play in all the players
 			function play_all() {
-				var count = 0;
+				let count = 0;
 				for (let i = 0; i < contents.face; i++) {
 					for (let j = 0; j < contents.row; j++) {
 						for (let k = 0; k < contents.col; k++) {
 							players[count].play();
 							count++;
-							console.log("Player plays.");
+							console.log("Player_" + i + "_" + j + "_" + k + " plays.");
 						}
 					}
 				}
@@ -76,7 +95,7 @@
 			function buffer_loaded_event(e) {
 				if (buffer_empty_flag[e.count] == true) {
 					buffer_empty_flag[e.count] = false;
-					var count = 0;
+					let count = 0;
 					for (let i = 0; i < contents.face; i++) {
 						for (let j = 0; j < contents.row; j++) {
 							for (let k = 0; k < contents.col; k++) {
@@ -95,22 +114,23 @@
 
 			// Initialize when loading the videos
             function initial() {
-				var video, url;
-				var count = 0;
+				let video, url;
+				let count = 0;
                 for (let i = 0; i < contents.face; i++) {
 					for (let j = 0; j < contents.row; j++) {
 						for (let k = 0; k < contents.col; k++) {
-							video = document.querySelector("#" + contents.tiles[i][j][k].id);
+							video = document.querySelector("#" + "video_" + i + "_" + j + "_" + k);
 							players[count] = new dashjs.MediaPlayer().create();
 							url = contents.baseUrl + contents.tiles[i][j][k].src;
 							// url = "http://222.20.77.111/dash/dash.mpd";
 							// url = "https://dash.akamaized.net/akamai/streamroot/050714/Spring_4Ktest.mpd";
+							// url = "http://222.20.78.151/ski_webm/my_video_manifest_500k.mpd";
 							buffer_empty_flag[count] = false;
 
 							// Don't use dash.js default rules
 							players[count].updateSettings({
 								'info': {
-									'id': contents.tiles[i][j][k].id,
+									'id': "video_" + i + "_" + j + "_" + k,
 									'count': count,
 									'face': i,
 									'row': j,
@@ -174,7 +194,7 @@
 				myvideo.style.width = contents.tiles[i][j][k].width;
 				myvideo.style.height = contents.tiles[i][j][k].height;
 				myvideo.style.border = '0px';
-				myvideo.id = contents.tiles[i][j][k].id;
+				myvideo.id = "video_" + i + "_" + j + "_" + k;
 				if (myvideo.id != "video_1_1_1") {
 					myvideo.volume = 0;
 				}
@@ -198,6 +218,7 @@
 			function init() {
 
 				var container = document.getElementById( 'container' );
+				container.innerHTML='';
 
 				camera = new THREE.PerspectiveCamera( 50, window.innerWidth / window.innerHeight, 1, 5000 );
 				// camera.position.set( 500, 350, 750 );
@@ -280,6 +301,11 @@
 
 				requestAnimationFrame( animate );
 
+				if (isChanged) {
+					isChanged = false;
+					init();
+				}
+
 				// lon += 0.1;
 				lat = Math.max( - 85, Math.min( 85, lat ) );
 				phi = THREE.MathUtils.degToRad( 90 - lat );
@@ -299,11 +325,19 @@
 			}
 		</script>
 
-		<div style="z-index: 999; position: absolute; height: 100px; width: 200px;">
-			<button onclick="initial();">Load</button>
-			<button onclick="play_all();">play</button>
-			<button onclick="pause_all();">pause</button>
-        </div>
+		<div style="z-index: 999; height: 100px; width: 200px;">
+			<button id="Link" onclick="document.getElementById('json').value != '' ? openJSON(document.getElementById('json').value) : openURLs();">Link</button>
+			<button id="Load" onclick="initial();">Load</button>
+			<button id="Play" onclick="play_all();">Play</button>
+			<button id="Pause" onclick="pause_all();">Pause</button>
+		</div>
+		
+		<div style="z-index: 999; color: #ffffff;">
+			<br>JSON(Empty then use the URLs below):<br>
+			<textarea id="json" rows="1" cols="100">../ball_video/ball_video.json</textarea>			
+			<br>URL(Empty then use the URLs in JSON):<br>
+			<textarea id="url" rows="6" cols="100"></textarea>
+		</div>
         
 	</body>
 	
