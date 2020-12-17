@@ -163,10 +163,29 @@
 							// Initializing
 							players[count].initialize(video, url, false);
 							count++;
+							setInterval(updateStats,500);
 						}
 					}
                 }
-            }
+			}
+			
+			function updateStats()
+			{
+				document.querySelector("#stats").innerHTML = "";
+				for (let i = 0; i < contents.face; i++) {
+					for (let j = 0; j < contents.row; j++) {
+						for (let k = 0; k < contents.col; k++) {
+							document.querySelector("#stats").innerHTML += ( "Video_" + i + "_" + j + "_" + k + ":<br>" );
+							document.querySelector("#stats").innerHTML += "Buffer level ";
+							document.querySelector("#stats").innerHTML += players[i * contents.row * contents.col + j * contents.col + k].getBufferLength();
+							document.querySelector("#stats").innerHTML += " s<br>";
+							document.querySelector("#stats").innerHTML += "Average Throughput ";
+							document.querySelector("#stats").innerHTML += players[i * contents.row * contents.col + j * contents.col + k].getAverageThroughput("video");
+							document.querySelector("#stats").innerHTML += " bps<br>";
+						}
+					}
+				}	
+			}
 		</script>
 
 		<style>
@@ -352,6 +371,8 @@
 				<option value ="FOVRule">FOVRule</option>
 				<option value ="HighestBitrateRule">HighestBitrateRule</option>
 			</select>
+			<br>
+			<span id="stats"></span>
 		</div>
         
 	</body>
