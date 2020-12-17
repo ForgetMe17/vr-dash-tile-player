@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Video</title>
+    <meta name="description" content="Video - A-Frame">
+    <script src="../../../../dash.js/dist/dash.all.debug.js"></script>
+    <script src="../../../dist/aframe-master.js"></script>
+    <script src="../../js/play-on-click.js"></script>
+  </head>
+  <body>
+    <a-scene>
+      <a-assets>
+        <video id="1" preload="auto" data-dashjs-player
+               src="http://222.20.78.151/ball_video_webm/1_my_video_manifest.mpd"
+               width="960" height="960" autoplay loop="true"
+               crossOrigin="anonymous" muted></video>
+        <video id="2" preload="auto" data-dashjs-player
+               src="http://222.20.78.151/ball_video_webm/2_my_video_manifest.mpd"
+               width="960" height="960" autoplay loop="true"
+               crossOrigin="anonymous" muted></video>
+        <video id="3" preload="auto" data-dashjs-player
+               src="http://222.20.78.151/ball_video_webm/3_my_video_manifest.mpd"
+               width="960" height="960" autoplay loop="true"
+               crossOrigin="anonymous" muted></video>
+        <video id="4" preload="auto" data-dashjs-player
+               src="http://222.20.78.151/ball_video_webm/4_my_video_manifest.mpd"
+               width="960" height="960" autoplay loop="true"
+               crossOrigin="anonymous" muted></video>
+        <video id="5" preload="auto" data-dashjs-player
+               src="http://222.20.78.151/ball_video_webm/5_my_video_manifest.mpd"
+               width="960" height="960" autoplay loop="true"
+               crossOrigin="anonymous" muted></video>
+        <video id="6" preload="auto" data-dashjs-player
+               src="http://222.20.78.151/ball_video_webm/6_my_video_manifest.mpd"
+               width="960" height="960" autoplay loop="true"
+               crossOrigin="anonymous" muted></video>
+      </a-assets>
+
+      <a-entity material="shader: flat; src: #1"
+                geometry="primitive: plane; width: 960; height: 960;"
+                position="480 0 0"
+                rotation="0 270 0"
+                play-on-click
+                visible="false">
+      </a-entity>
+      <a-entity material="shader: flat; src: #2"
+                geometry="primitive: plane; width: 960; height: 960;"
+                position="-480 0 0"
+                rotation="0 90 0"
+                play-on-click
+                visible="false">
+      </a-entity>
+      <a-entity material="shader: flat; src: #3"
+                geometry="primitive: plane; width: 960; height: 960;"
+                position="0 480 0"
+                rotation="90 180 0"
+                play-on-click
+                visible="false">
+      </a-entity>
+      <a-entity material="shader: flat; src: #4"
+                geometry="primitive: plane; width: 960; height: 960;"
+                position="0 -480 0"
+                rotation="-90 180 0"
+                play-on-click
+                visible="false">
+      </a-entity>
+      <a-entity material="shader: flat; src: #5"
+                geometry="primitive: plane; width: 960; height: 960;"
+                position="0 0 -480"
+                rotation="0 0 0"
+                play-on-click
+                visible="false">
+      </a-entity>
+      <a-entity material="shader: flat; src: #6"
+                geometry="primitive: plane; width: 960; height: 960;"
+                position="0 0 480"
+                rotation="0 180 0"
+                play-on-click
+                visible="false">
+      </a-entity>
+
+      <a-camera>
+        <a-entity
+          position="0 0 -1.5">
+        </a-entity>
+      </a-camera>
+    </a-scene>
+  </body>
+</html>

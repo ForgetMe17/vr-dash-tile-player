@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+    <head>
+
+		<meta charset="utf-8"/>
+		<title>ball_video</title>
+		
+		<script src="./aframe/dist/aframe-master.js"></script>
+		<script src="./aframe/examples/js/play-on-click.js"></script>
+
+		<style>
+			body {
+				background-color: #000000;
+			}
+		</style>
+		
+	</head>
+	
+    <body>
+
+		<a-scene>
+
+			<a-assets>
+			  	<video id="video_0_0_0" preload="auto" width="2880" height="2880" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_1_0_0" preload="auto" width="2880" height="2880" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_2_0_0" preload="auto" width="2880" height="2880" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_3_0_0" preload="auto" width="2880" height="2880" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_4_0_0" preload="auto" width="2880" height="2880" autoplay loop="true" crossOrigin="anonymous" muted></video>
+			  	<video id="video_5_0_0" preload="auto" width="2880" height="2880" autoplay loop="true" crossOrigin="anonymous" muted></video>
+			</a-assets>
+	  
+			<a-entity material="shader: flat; src: #video_0_0_0"
+					  geometry="primitive: plane; width: 2880; height: 2880;"
+					  position="1440 0 0"
+					  rotation="0 270 0"
+					  play-on-click
+					  visible="false">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_1_0_0"
+					  geometry="primitive: plane; width: 2880; height: 2880;"
+					  position="-1440 0 0"
+					  rotation="0 90 0"
+					  play-on-click
+					  visible="false">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_2_0_0"
+					  geometry="primitive: plane; width: 2880; height: 2880;"
+					  position="0 1440 0"
+					  rotation="90 0 0"
+					  play-on-click
+					  visible="false">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_3_0_0"
+					  geometry="primitive: plane; width: 2880; height: 2880;"
+					  position="0 -1440 0"
+					  rotation="-90 0 0"
+					  play-on-click
+					  visible="false">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_4_0_0"
+					  geometry="primitive: plane; width: 2880; height: 2880;"
+					  position="0 0 -1440"
+					  rotation="0 0 0"
+					  play-on-click
+					  visible="false">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_5_0_0"
+					  geometry="primitive: plane; width: 2880; height: 2880;"
+					  position="0 0 1440"
+					  rotation="0 180 0"
+					  play-on-click
+					  visible="false">
+			</a-entity>
+	  
+			<a-camera>
+				<a-entity
+					position="0 0 -1.5">
+			  	</a-entity>
+			</a-camera>
+
+		</a-scene>
+        
+	</body>
+	
+</html>
