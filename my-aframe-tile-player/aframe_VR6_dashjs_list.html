@@ -72,6 +72,10 @@
 						}
 					}
 				}
+				if (contents.audio && contents.audio != "") {
+					players[count].pause();
+					console.log("Audio pauses.");
+				}
 			}
 
 			// Play in all the players
@@ -86,6 +90,10 @@
 						}
 					}
 				}
+				if (contents.audio && contents.audio != "") {
+					players[count].play();
+					console.log("Audio plays.");
+				}
 			}
 
 			// Triggered when any player's buffer is empty, which to stop all the players and wait for rebuffering.
@@ -98,6 +106,7 @@
 			function buffer_loaded_event(e) {
 				if (buffer_empty_flag[e.count] == true) {
 					buffer_empty_flag[e.count] = false;
+
 					let count = 0;
 					for (let i = 0; i < contents.face; i++) {
 						for (let j = 0; j < contents.row; j++) {
@@ -106,11 +115,15 @@
 									return;
 								}
 								count++;
-								if (i == contents.face - 1 && j == contents.row - 1 && k == contents.col - 1) {
-									play_all();
-								}
 							}
 						}
+					}
+					if (contents.audio && contents.audio != "") {
+						if (buffer_empty_flag[count] == false) {
+							play_all();
+						}
+					} else {
+						play_all();
 					}
 				}
 			}
@@ -140,6 +153,10 @@
 									'abr': {
 										'useDefaultABRRules': false
 									}
+									// liveDelay: null, 
+									// liveCatchup: {
+									// 	enabled: true
+									// }
 								}
 							});
 							// Add my custom quality switch rule, look at [].js to know more about the structure of a custom rule
@@ -164,15 +181,35 @@
 							// Initializing
 							players[count].initialize(video, url, false);
 							count++;
-							setInterval(updateStats,500);
 						}
 					}
-                }
+				}
+				if (contents.audio && contents.audio != "") {
+					video = document.getElementById( "frame" ).contentWindow.document.querySelector("#audio");
+					players[count] = new dashjs.MediaPlayer().create();
+					url = contents.baseUrl + contents.audio;
+					buffer_empty_flag[count] = true;
+
+					players[count].updateSettings({
+						'info': {
+							'id': "audio",
+							'count': count,
+						}
+					});
+
+					// Turn on the event listeners and add actions for triggers 
+					players[count].on(dashjs.MediaPlayer.events["BUFFER_EMPTY"],buffer_empty_event);
+					players[count].on(dashjs.MediaPlayer.events["BUFFER_LOADED"],buffer_loaded_event);
+
+					// Initializing
+					players[count].initialize(video, url, false);
+				}
+				setInterval(updateStats,500);
 			}
 			
 			function updateStats()
 			{
-				document.querySelector("#stats").innerHTML = "";
+				document.querySelector("#stats").innerHTML = "Monitor:<br>";
 				for (let i = 0; i < contents.face; i++) {
 					for (let j = 0; j < contents.row; j++) {
 						for (let k = 0; k < contents.col; k++) {
@@ -185,13 +222,38 @@
 							document.querySelector("#stats").innerHTML += " bps<br>";
 						}
 					}
-				}	
+				}
+				if (contents.audio && contents.audio != "") {
+					document.querySelector("#stats").innerHTML += ( "Audio:<br>" );
+					document.querySelector("#stats").innerHTML += "Buffer level ";
+					document.querySelector("#stats").innerHTML += players[contents.face * contents.row * contents.col].getBufferLength();
+					document.querySelector("#stats").innerHTML += " s<br>";
+					document.querySelector("#stats").innerHTML += "Average Throughput ";
+					document.querySelector("#stats").innerHTML += players[contents.face * contents.row * contents.col].getAverageThroughput("video");  //////////////////////////
+					document.querySelector("#stats").innerHTML += " bps<br>";
+				}
 			}
 		</script>
 
 		<script>
 			function aframe_init() {
 				document.getElementById( 'frame' ).src = "./6_1_1.html";
+			}
+
+			function VOD_LIVE() {
+				let index = document.getElementById("type").selectedIndex;
+				let selectedRule = document.getElementById("type").options[index].text;
+				switch (selectedRule) {
+					case "VOD":
+						document.getElementById("json").value = "https://222.20.77.111/processed/CMPVP907/aframeVP907.json";
+						break;
+					case "LIVE":
+						document.getElementById("json").value = "https://222.20.77.111/dash/default.json";
+						break;
+					default:
+						document.getElementById("json").value = "";
+						break;
+				}
 			}
 		</script>
 
@@ -217,16 +279,20 @@
 		
 		<div style="z-index: 999; color: #000000;">
 			<br>JSON(Empty then use the URLs below):<br>
-			<textarea id="json" rows="1" cols="100">../ball_video_webm/ball_video.json</textarea>			
+			<textarea id="json" rows="1" cols="100">https://222.20.77.111/processed/CMPVP907/aframeVP907.json</textarea>			
 			<br>URL(Used when JSON is empty):<br>
 			<textarea id="url" rows="6" cols="100"></textarea>
 			<br>
+			<select id="type" onchange="VOD_LIVE();">
+				<option value ="VOD">VOD</option>
+				<option value ="LIVE">LIVE</option>
+			</select>
 			<select id="rule">
 				<option value ="HighestBitrateRule">HighestBitrateRule</option>
 				<option value ="FOVRule">FOVRule</option>
 			</select>
 			<br>
-			<span id="stats"></span>
+			<span id="stats" style="width: 300px; height: 500px; position: fixed; top: 10px; right: 10px; background-color: whitesmoke;">Monitor Loaded.</span>
 		</div>
         
 	</body>
