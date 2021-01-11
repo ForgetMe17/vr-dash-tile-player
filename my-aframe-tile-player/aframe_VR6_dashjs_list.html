@@ -16,6 +16,7 @@
 			var players = {};  // Container for players, which is easy for us to operate in them.
 			var buffer_empty_flag = {};  // Flags for players, showing whether the player is frozen or not.
 			var lon = 90, lat = 0;  // Longitude and latitude in spherical coordinates.
+			var pointerX, pointerY;  // Position of mouse click
 			var contents = {};  // Contents from JSON file
 		</script>
 
@@ -241,6 +242,8 @@
 					return;
 				}
 				document.getElementById( 'frame' ).src = "./" + contents.face + "_" + contents.row + "_" + contents.col + ".html";
+				lon = 90;
+				lat = 0;
 			}
 
 			function VOD_LIVE() {
@@ -248,10 +251,10 @@
 				let selectedRule = document.getElementById("type").options[index].text;
 				switch (selectedRule) {
 					case "VOD":
-						document.getElementById("json").value = "https://222.20.77.111/processed/CMPVP907/aframeVP907.json";
+						document.getElementById("json").value = "http://222.20.77.111/processed/CMPVP907/aframeVP907.json";
 						break;
 					case "LIVE":
-						document.getElementById("json").value = "https://222.20.77.111/dash/default.json";
+						document.getElementById("json").value = "http://222.20.77.111/dash/default.json";
 						break;
 					default:
 						document.getElementById("json").value = "";
@@ -282,7 +285,7 @@
 		
 		<div style="z-index: 999; color: #000000;">
 			<br>JSON(Empty then use the URLs below):<br>
-			<textarea id="json" rows="1" cols="100">https://222.20.77.111/processed/CMPVP907/aframeVP907.json</textarea>			
+			<textarea id="json" rows="1" cols="100">http://222.20.77.111/processed/CMPVP907/aframeVP907.json</textarea>			
 			<br>URL(Used when JSON is empty):<br>
 			<textarea id="url" rows="6" cols="100"></textarea>
 			<br>
@@ -291,12 +294,50 @@
 				<option value ="LIVE">LIVE</option>
 			</select>
 			<select id="rule">
-				<option value ="HighestBitrateRule">HighestBitrateRule</option>
 				<option value ="FOVRule">FOVRule</option>
+				<option value ="HighestBitrateRule">HighestBitrateRule</option>
 			</select>
 			<br>
 			<span id="stats" style="width: 300px; height: 500px; position: fixed; top: 10px; right: 10px; background-color: whitesmoke;">Monitor Loaded.</span>
 		</div>
+
+		<script>
+			
+			// Enable the FOV event listener in iframe
+			document.getElementById('frame').onload = function () {
+				document.getElementById('frame').contentDocument.addEventListener( 'pointerdown', onPointerDown );
+			}
+
+            function onPointerDown( event ) {
+				if ( event.isPrimary === false ) return;
+				pointerX = event.clientX;
+				pointerY = event.clientY;
+				document.getElementById('frame').contentDocument.addEventListener( 'pointermove', onPointerMove );
+				document.getElementById('frame').contentDocument.addEventListener( 'pointerup', onPointerUp );
+				console.log("Pointer downs. lon: "+ lon + "; lat: " + lat + ".");
+			}
+
+			function onPointerMove( event ) {
+				if ( event.isPrimary === false ) return;
+				lon += ( event.clientX - pointerX ) * 0.1;  // In Chrome, turn right then the lon increases.
+				lon > 360 ? lon = lon - 360 : null;
+				lon < 0 ? lon = lon + 360 : null;
+				lat -= ( event.clientY - pointerY ) * 0.1;  // In Chrome, turn up then the lat increases.
+				lat > 90 ? lat = 90 : null;
+				lat < -90 ? lat = -90 : null;
+				pointerX = event.clientX;
+				pointerY = event.clientY;
+				console.log("Pointer moves. lon: "+ lon + "; lat: " + lat + ".");
+			}
+
+			function onPointerUp() {
+				if ( event.isPrimary === false ) return;
+				document.getElementById('frame').contentDocument.removeEventListener( 'pointermove', onPointerMove );
+				document.getElementById('frame').contentDocument.removeEventListener( 'pointerup', onPointerUp );
+				console.log("Pointer ups. lon: "+ lon + "; lat: " + lat + ".");
+			}
+
+		</script>
         
 	</body>
 	
