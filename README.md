@@ -36,5 +36,5 @@ Default: Using FOVRule as default. If need please change the config in HTML page
 1. DASH Adaptive Streaming for HTML 5 Video (Webm) : https://developer.mozilla.org/en-US/docs/Web/Media/DASH_Adaptive_Streaming_for_HTML_5_Video
 2. FFMPEG + Bento4 (MP4)
 
-( Processed dataset in HUST: https://222.20.77.111/processed )
+( Processed dataset in HUST: http://222.20.77.111/processed )
 
