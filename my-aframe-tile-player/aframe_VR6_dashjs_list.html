@@ -319,10 +319,10 @@
 
 			function onPointerMove( event ) {
 				if ( event.isPrimary === false ) return;
-				lon += ( event.clientX - pointerX ) * 0.1;  // In Chrome, turn right then the lon increases.
+				lon += ( event.clientX - pointerX ) * 0.1148;  // In Chrome, turn right then the lon increases.
 				lon > 360 ? lon = lon - 360 : null;
 				lon < 0 ? lon = lon + 360 : null;
-				lat -= ( event.clientY - pointerY ) * 0.1;  // In Chrome, turn up then the lat increases.
+				lat -= ( event.clientY - pointerY ) * 0.1148;  // In Chrome, turn up then the lat increases.
 				lat > 90 ? lat = 90 : null;
 				lat < -90 ? lat = -90 : null;
 				pointerX = event.clientX;
