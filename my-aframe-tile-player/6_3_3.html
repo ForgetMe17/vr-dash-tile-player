@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+    <head>
+
+		<meta charset="utf-8"/>
+		<title>ball_video</title>
+		
+		<script src="./aframe/dist/aframe-master.js"></script>
+
+		<style>
+			body {
+				background-color: #000000;
+			}
+		</style>
+		
+	</head>
+	
+    <body>
+
+		<a-scene>
+
+			<a-assets>
+				<video id="video_0_0_0" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_0_0_1" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_0_0_2" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_0_1_0" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_0_1_1" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_0_1_2" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_0_2_0" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_0_2_1" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_0_2_2" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_1_0_0" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_1_0_1" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_1_0_2" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_1_1_0" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_1_1_1" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_1_1_2" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_1_2_0" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_1_2_1" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_1_2_2" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_2_0_0" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_2_0_1" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_2_0_2" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_2_1_0" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_2_1_1" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_2_1_2" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_2_2_0" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_2_2_1" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_2_2_2" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_3_0_0" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_3_0_1" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_3_0_2" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_3_1_0" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_3_1_1" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_3_1_2" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_3_2_0" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_3_2_1" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_3_2_2" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_4_0_0" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_4_0_1" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_4_0_2" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_4_1_0" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_4_1_1" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_4_1_2" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_4_2_0" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_4_2_1" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_4_2_2" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_5_0_0" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_5_0_1" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_5_0_2" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_5_1_0" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_5_1_1" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_5_1_2" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_5_2_0" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_5_2_1" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<video id="video_5_2_2" preload="auto" width="480" height="480" autoplay loop="true" crossOrigin="anonymous" muted></video>
+				<audio id="audio"></audio>  
+			</a-assets>
+	  
+			<a-entity material="shader: flat; src: #video_0_0_0"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="720 480 -480"
+					  rotation="0 270 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_0_0_1"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="720 480 0"
+					  rotation="0 270 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_0_0_2"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="720 480 480"
+					  rotation="0 270 0"
+					  visible="true">
+			</a-entity>			
+			<a-entity material="shader: flat; src: #video_0_1_0"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="720 0 -480"
+					  rotation="0 270 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_0_1_1"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="720 0 0"
+					  rotation="0 270 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_0_1_2"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="720 0 480"
+					  rotation="0 270 0"
+					  visible="true">
+			</a-entity>	
+			<a-entity material="shader: flat; src: #video_0_2_0"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="720 -480 -480"
+					  rotation="0 270 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_0_2_1"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="720 -480 0"
+					  rotation="0 270 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_0_2_2"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="720 -480 480"
+					  rotation="0 270 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_1_0_0"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="-720 480 480"
+					  rotation="0 90 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_1_0_1"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="-720 480 0"
+					  rotation="0 90 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_1_0_2"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="-720 480 -480"
+					  rotation="0 90 0"
+					  visible="true">
+			</a-entity>			
+			<a-entity material="shader: flat; src: #video_1_1_0"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="-720 0 480"
+					  rotation="0 90 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_1_1_1"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="-720 0 0"
+					  rotation="0 90 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_1_1_2"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="-720 0 -480"
+					  rotation="0 90 0"
+					  visible="true">
+			</a-entity>	
+			<a-entity material="shader: flat; src: #video_1_2_0"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="-720 -480 480"
+					  rotation="0 90 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_1_2_1"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="-720 -480 0"
+					  rotation="0 90 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_1_2_2"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="-720 -480 -480"
+					  rotation="0 90 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_2_0_0"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="-480 720 480"
+					  rotation="90 0 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_2_0_1"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="0 720 480"
+					  rotation="90 0 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_2_0_2"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="480 720 480"
+					  rotation="90 0 0"
+					  visible="true">
+			</a-entity>			
+			<a-entity material="shader: flat; src: #video_2_1_0"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="-480 720 0"
+					  rotation="90 0 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_2_1_1"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="0 720 0"
+					  rotation="90 0 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_2_1_2"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="480 720 0"
+					  rotation="90 0 0"
+					  visible="true">
+			</a-entity>	
+			<a-entity material="shader: flat; src: #video_2_2_0"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="-480 720 -480"
+					  rotation="90 0 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_2_2_1"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="0 720 -480"
+					  rotation="90 0 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_2_2_2"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="480 720 -480"
+					  rotation="90 0 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_3_0_0"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="-480 -720 -480"
+					  rotation="-90 0 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_3_0_1"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="0 -720 -480"
+					  rotation="-90 0 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_3_0_2"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="480 -720 -480"
+					  rotation="-90 0 0"
+					  visible="true">
+			</a-entity>			
+			<a-entity material="shader: flat; src: #video_3_1_0"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="-480 -720 0"
+					  rotation="-90 0 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_3_1_1"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="0 -720 0"
+					  rotation="-90 0 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_3_1_2"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="480 -720 0"
+					  rotation="-90 0 0"
+					  visible="true">
+			</a-entity>	
+			<a-entity material="shader: flat; src: #video_3_2_0"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="-480 -720 480"
+					  rotation="-90 0 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_3_2_1"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="0 -720 480"
+					  rotation="-90 0 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_3_2_2"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="480 -720 480"
+					  rotation="-90 0 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_4_0_0"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="-480 480 -720"
+					  rotation="0 0 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_4_0_1"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="0 480 -720"
+					  rotation="0 0 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_4_0_2"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="480 480 -720"
+					  rotation="0 0 0"
+					  visible="true">
+			</a-entity>			
+			<a-entity material="shader: flat; src: #video_4_1_0"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="-480 0 -720"
+					  rotation="0 0 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_4_1_1"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="0 0 -720"
+					  rotation="0 0 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_4_1_2"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="480 0 -720"
+					  rotation="0 0 0"
+					  visible="true">
+			</a-entity>	
+			<a-entity material="shader: flat; src: #video_4_2_0"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="-480 -480 -720"
+					  rotation="0 0 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_4_2_1"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="0 -480 -720"
+					  rotation="0 0 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_4_2_2"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="480 -480 -720"
+					  rotation="0 0 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_5_0_0"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="480 480 720"
+					  rotation="0 180 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_5_0_1"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="0 480 720"
+					  rotation="0 180 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_5_0_2"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="-480 480 720"
+					  rotation="0 180 0"
+					  visible="true">
+			</a-entity>			
+			<a-entity material="shader: flat; src: #video_5_1_0"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="480 0 720"
+					  rotation="0 180 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_5_1_1"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="0 0 720"
+					  rotation="0 180 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_5_1_2"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="-480 0 720"
+					  rotation="0 180 0"
+					  visible="true">
+			</a-entity>	
+			<a-entity material="shader: flat; src: #video_5_2_0"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="480 -480 720"
+					  rotation="0 180 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_5_2_1"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="0 -480 720"
+					  rotation="0 180 0"
+					  visible="true">
+			</a-entity>
+			<a-entity material="shader: flat; src: #video_5_2_2"
+					  geometry="primitive: plane; width: 480; height: 480;"
+					  position="-480 -480 720"
+					  rotation="0 180 0"
+					  visible="true">
+			</a-entity>
+		</a-scene>
+        
+	</body>
+	
+</html>

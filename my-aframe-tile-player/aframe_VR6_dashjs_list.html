@@ -237,7 +237,10 @@
 
 		<script>
 			function aframe_init() {
-				document.getElementById( 'frame' ).src = "./6_1_1.html";
+				if (contents == {}) {
+					return;
+				}
+				document.getElementById( 'frame' ).src = "./" + contents.face + "_" + contents.row + "_" + contents.col + ".html";
 			}
 
 			function VOD_LIVE() {
