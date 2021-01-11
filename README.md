@@ -4,7 +4,7 @@
 
 1. dash.js - For adaptive bitrate streaming via DASH.
 2. three.js - For 3D rendering, with CSS3DRenderer.js so far (WebXR not supported).
-3. aframe - For 3D rendering (WebXR supported for 2K- videos).
+3. aframe - For 3D rendering (WebXR supported for any videos based on VP9).
 
 ### ABR Algorithms we use
 
@@ -15,7 +15,7 @@ Default: Using FOVRule as default. If need please change the config in HTML page
 
 ### How to run
 
-##### Player over three.js
+##### Player over three.js (No more updates)
 
 1. Run the HTML file via HTTP address (e.g., http://localhost/vr-dash-tile-player/CSS_VR6_dashjs.html).
 2. Confirm the location of JSON file and the Rule you want to use in HTML page, then click "link".
@@ -25,12 +25,15 @@ Default: Using FOVRule as default. If need please change the config in HTML page
 ##### Player over aframe
 
 1. Run the HTML file via HTTP address (e.g., http://localhost/vr-dash-tile-player/aframe_VR6_dashjs_list.html).
-2. Confirm the location of JSON file and the Rule you want to use in HTML page, then click "link".
+2. Confirm the location of JSON file, the Mode (VOD/LIVE) and the Rule you want to use in HTML page, then click "link".
 3. Click "aframe" to load aframe page.
 4. Click "load" to initialize MediaPlayer according to JSON description.
 5. Click "Play" and "Pause" to control the player.
+6. When using FOVRule, dragging the view in iframe would activate bitrate selection based on FOV.
 
 ### Media Preprocessing
 
 1. DASH Adaptive Streaming for HTML 5 Video (Webm) : https://developer.mozilla.org/en-US/docs/Web/Media/DASH_Adaptive_Streaming_for_HTML_5_Video
 2. FFMPEG + Bento4 (MP4)
+( Processed dataset in HUST: https://222.20.77.111/processed )
+
