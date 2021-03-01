@@ -25,7 +25,7 @@ Default: Using FOVRule as default. If need please change the config in HTML page
 ##### Player over aframe
 
 1. Run the HTML file via HTTP address (e.g., http://localhost/vr-dash-tile-player/aframe_VR6_dashjs_list.html).
-2. Confirm the location of JSON file, the Mode (VOD/LIVE) and the Rule you want to use in HTML page, then click "link".
+2. Confirm the location of JSON file, the Mode (VOD/LIVE) and the Rule(FOVRule/HighestBitrateRule) you want to use in HTML page, then click "link".
 3. Click "aframe" to load aframe page.
 4. Click "load" to initialize MediaPlayer according to JSON description.
 5. Click "Play" and "Pause" to control the player.
@@ -37,4 +37,4 @@ Default: Using FOVRule as default. If need please change the config in HTML page
 2. FFMPEG + Bento4 (MP4)
 
 ( Processed dataset in HUST: http://222.20.77.111/processed )
-
+( Precessed dataset in Cloud Drive: https://pan.baidu.com/s/1sfRAl8zdqnERUhsLAqo6rA Password：hust )
