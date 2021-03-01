@@ -5,11 +5,13 @@
     <head>
 
 		<meta charset="utf-8"/>
-		<title>aframe_VR6_dashjs</title>
+		<title>(^_^)~ VR PLAYER ~(^_^)</title>
 		
 		<script src="./dash.js/dist/dash.all.debug.js"></script>
+		<script src="opencv.js"></script>
 		<script src="HighestBitrateRule.js" class="code"></script>
 		<script src="FOVRule.js" class="code"></script>
+		<script src="FOVContentRule.js" class="code"></script>
 
 		<script>
 			// Global variables
@@ -18,6 +20,11 @@
 			var lon = 90, lat = 0;  // Longitude and latitude in spherical coordinates.
 			var pointerX, pointerY;  // Position of mouse click
 			var contents = {};  // Contents from JSON file
+			var myBufferLength = {};  // Data from monitor
+			var myAverageThroughput = {};  // Data from monitor
+			var myTime = {};  // Data from monitor
+			var myQuality = {};  // Data from monitor
+			var results = [];  // Data from contents analytics
 		</script>
 
 		<script>
@@ -170,6 +177,9 @@
 								case "HighestBitrateRule":
 									players[count].addABRCustomRule('qualitySwitchRules', 'HighestBitrateRule', HighestBitrateRule);
 									break;
+								case "FOVContentRule":
+									players[count].addABRCustomRule('qualitySwitchRules', 'FOVContentRule', FOVContentRule);
+									break;									
 								default:
 									players[count].addABRCustomRule('qualitySwitchRules', 'FOVRule', FOVRule);
 									break;
@@ -181,12 +191,25 @@
 
 							// Initializing
 							players[count].initialize(video, url, false);
+							myBufferLength[count] = players[count].getBufferLength();;
+							myAverageThroughput[count] = players[count].getAverageThroughput("video");
+							myTime[count] = players[count].time();
+							myQuality[count] = players[count].getQualityFor("video");
+
+							// Get video captures
+							let canvas = document.createElement( "canvas" );
+							canvas.id = "capture_" + i + "_" + j + "_" + k;
+							canvas.width = 256;
+    						canvas.height = 256;
+							document.getElementById("captures").appendChild(canvas);
+							
 							count++;
 						}
 					}
 				}
+				// Audio part
 				if (contents.audio && contents.audio != "") {
-					video = document.getElementById( "frame" ).contentWindow.document.querySelector("#audio");
+					var audio = document.getElementById( "frame" ).contentWindow.document.querySelector("#audio");
 					players[count] = new dashjs.MediaPlayer().create();
 					url = contents.baseUrl + contents.audio;
 					buffer_empty_flag[count] = true;
@@ -203,40 +226,75 @@
 					players[count].on(dashjs.MediaPlayer.events["BUFFER_LOADED"],buffer_loaded_event);
 
 					// Initializing
-					players[count].initialize(video, url, false);
+					players[count].initialize(audio, url, false);
+					myBufferLength[count] = players[count].getBufferLength();;
+					myAverageThroughput[count] = players[count].getAverageThroughput("video");  //////////////////////////
+					myTime[count] = players[count].time();
+					myQuality[count] = players[count].getQualityFor("video");  //////////////////////////
 				}
-				setInterval(updateStats,500);
+				setInterval(updateStats, 500);
+				setInterval(function () {
+					for (let i = 0; i < contents.face; i++) {
+						for (let j = 0; j < contents.row; j++) {
+							for (let k = 0; k < contents.col; k++) {
+								document.getElementById("capture_" + i + "_" + j + "_" + k).getContext('2d').drawImage(document.getElementById( "frame" ).contentWindow.document.querySelector("#" + "video_" + i + "_" + j + "_" + k), 0, 0, 256, 256);
+								// img.src = canvas.toDataURL("image/png");
+							}
+						}
+					}
+				}, 2000);
 			}
 			
-			function updateStats()
-			{
+			// Show the data in monitor
+			function updateStats() {
 				document.querySelector("#stats").innerHTML = "Monitor:<br>";
 				for (let i = 0; i < contents.face; i++) {
 					for (let j = 0; j < contents.row; j++) {
 						for (let k = 0; k < contents.col; k++) {
+							myBufferLength[i * contents.row * contents.col + j * contents.col + k] = players[i * contents.row * contents.col + j * contents.col + k].getBufferLength();;
+							myAverageThroughput[i * contents.row * contents.col + j * contents.col + k] = players[i * contents.row * contents.col + j * contents.col + k].getAverageThroughput("video");
+							myTime[i * contents.row * contents.col + j * contents.col + k] = players[i * contents.row * contents.col + j * contents.col + k].time();
+							myQuality[i * contents.row * contents.col + j * contents.col + k] = players[i * contents.row * contents.col + j * contents.col + k].getQualityFor("video");							
 							document.querySelector("#stats").innerHTML += ( "Video_" + i + "_" + j + "_" + k + ":<br>" );
 							document.querySelector("#stats").innerHTML += "Buffer level ";
-							document.querySelector("#stats").innerHTML += players[i * contents.row * contents.col + j * contents.col + k].getBufferLength();
+							document.querySelector("#stats").innerHTML += myBufferLength[i * contents.row * contents.col + j * contents.col + k];
 							document.querySelector("#stats").innerHTML += " s<br>";
 							document.querySelector("#stats").innerHTML += "Average Throughput ";
-							document.querySelector("#stats").innerHTML += players[i * contents.row * contents.col + j * contents.col + k].getAverageThroughput("video");
+							document.querySelector("#stats").innerHTML += myAverageThroughput[i * contents.row * contents.col + j * contents.col + k];
 							document.querySelector("#stats").innerHTML += " bps<br>";
+							document.querySelector("#stats").innerHTML += "Time ";
+							document.querySelector("#stats").innerHTML += myTime[i * contents.row * contents.col + j * contents.col + k];
+							document.querySelector("#stats").innerHTML += " s<br>";
+							document.querySelector("#stats").innerHTML += "Quality ";
+							document.querySelector("#stats").innerHTML += myQuality[i * contents.row * contents.col + j * contents.col + k];
+							document.querySelector("#stats").innerHTML += "<br><br>";
 						}
 					}
 				}
 				if (contents.audio && contents.audio != "") {
+					myBufferLength[contents.face * contents.row * contents.col] = players[contents.face * contents.row * contents.col].getBufferLength();;
+					myAverageThroughput[contents.face * contents.row * contents.col] = players[contents.face * contents.row * contents.col].getAverageThroughput("video");  //////////////////////////
+					myTime[contents.face * contents.row * contents.col] = players[contents.face * contents.row * contents.col].time();
+					myQuality[contents.face * contents.row * contents.col] = players[contents.face * contents.row * contents.col].getQualityFor("video");  //////////////////////////
 					document.querySelector("#stats").innerHTML += ( "Audio:<br>" );
 					document.querySelector("#stats").innerHTML += "Buffer level ";
-					document.querySelector("#stats").innerHTML += players[contents.face * contents.row * contents.col].getBufferLength();
+					document.querySelector("#stats").innerHTML += myBufferLength[contents.face * contents.row * contents.col];
 					document.querySelector("#stats").innerHTML += " s<br>";
 					document.querySelector("#stats").innerHTML += "Average Throughput ";
-					document.querySelector("#stats").innerHTML += players[contents.face * contents.row * contents.col].getAverageThroughput("video");  //////////////////////////
+					document.querySelector("#stats").innerHTML += myAverageThroughput[contents.face * contents.row * contents.col];
 					document.querySelector("#stats").innerHTML += " bps<br>";
+					document.querySelector("#stats").innerHTML += "Time ";
+					document.querySelector("#stats").innerHTML += myTime[contents.face * contents.row * contents.col];
+					document.querySelector("#stats").innerHTML += " s<br>";
+					document.querySelector("#stats").innerHTML += "Quality ";
+					document.querySelector("#stats").innerHTML += myQuality[contents.face * contents.row * contents.col];
+					document.querySelector("#stats").innerHTML += "<br><br>";
 				}
 			}
 		</script>
 
 		<script>
+			// Open the iframe according to the number of faces, rows and cols
 			function aframe_init() {
 				if (contents == {}) {
 					return;
@@ -245,13 +303,13 @@
 				lon = 90;
 				lat = 0;
 			}
-
+			// Switch the source automatically according to the situation
 			function VOD_LIVE() {
 				let index = document.getElementById("type").selectedIndex;
 				let selectedRule = document.getElementById("type").options[index].text;
 				switch (selectedRule) {
 					case "VOD":
-						document.getElementById("json").value = "http://222.20.77.111/processed/CMPVP907/aframeVP907.json";
+						document.getElementById("json").value = "http://localhost/CMPVP907/aframeVP907.json";
 						break;
 					case "LIVE":
 						document.getElementById("json").value = "http://222.20.77.111/dash/default.json";
@@ -283,9 +341,9 @@
 			<button id="Pause" onclick="pause_all();">Pause</button>
 		</div>
 		
-		<div style="z-index: 999; color: #000000;">
+		<div style="z-index: 999; color: #000000; height: 250px;">
 			<br>JSON(Empty then use the URLs below):<br>
-			<textarea id="json" rows="1" cols="100">http://222.20.77.111/processed/CMPVP907/aframeVP907.json</textarea>			
+			<textarea id="json" rows="1" cols="100">http://localhost/CMPVP907/aframeVP907.json</textarea>			
 			<br>URL(Used when JSON is empty):<br>
 			<textarea id="url" rows="6" cols="100"></textarea>
 			<br>
@@ -296,11 +354,40 @@
 			<select id="rule">
 				<option value ="FOVRule">FOVRule</option>
 				<option value ="HighestBitrateRule">HighestBitrateRule</option>
+				<option value ="FOVContentRule">FOVContentRule</option>
 			</select>
 			<br>
-			<span id="stats" style="width: 300px; height: 500px; position: fixed; top: 10px; right: 10px; background-color: whitesmoke;">Monitor Loaded.</span>
+			<span id="stats" style="width: 500px; height: 1000px; position: fixed; top: 10px; right: 10px; background-color: whitesmoke;">Monitor Loaded.</span>
 		</div>
 
+		<div id="captures" style="width: 768px;"></div>
+		
+		<input id="result_input" type="file" onchange="csv2json(this)">
+
+		<script>
+			// Translate the csv file loaded manually to json data
+			function csv2json(input) {
+				let file = input.files[0];	// Load the file
+				let reader = new FileReader();	// Create a new FileReader instance
+				reader.readAsText(file);	// Read the CSV file
+				reader.onload = () => {		// Trigger when loaded
+					let fileData = reader.result	// Read the data
+					let lines = fileData.split("\n");
+					let result = [];
+					let headers = lines[0].split(",");
+					for(let i = 1; i < lines.length; i++) {
+						let obj = {};
+						let currentline = lines[i].split(",");
+						for(var j = 0; j < headers.length ; j++) {
+							obj[headers[j]] = currentline[j];
+						}
+						result.push(obj);
+					}
+					results.push(result);
+				}
+			}
+		</script>
+		
 		<script>
 			
 			// Enable the FOV event listener in iframe
