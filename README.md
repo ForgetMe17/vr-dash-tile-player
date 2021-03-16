@@ -35,6 +35,8 @@ Default: Using FOVRule as default. If need please change the config in HTML page
 
 1. DASH Adaptive Streaming for HTML 5 Video (Webm) : https://developer.mozilla.org/en-US/docs/Web/Media/DASH_Adaptive_Streaming_for_HTML_5_Video
 2. FFMPEG + Bento4 (MP4)
+3. If you want to load the media files locally, you need to set up a HTTP file server on your device: https://www.jianshu.com/p/1f53e649b932 (Chinese only)
 
 ( Processed dataset in HUST: http://222.20.77.111/processed )
+
 ( Precessed dataset in Cloud Drive: https://pan.baidu.com/s/1sfRAl8zdqnERUhsLAqo6rA Password：hust )
