@@ -19,7 +19,7 @@
 			// 2. Content-based ABR -- Feng Fangzheng
 			// 3. Popularity-based ABR (MEC later) -- Li Jinxi
 			// 3. Aframe assets on demands
-			// 4. Tiles sync -- Feng Fangzheng
+			// 4. Tiles sync -- Feng Fangzheng (DONE)
 			// 5. Rendering
 			// 6. Visual UI -- Gao Nianzhen
 			// 7. QUIC/WebRTC -- Chen Jiaxi
@@ -178,9 +178,12 @@
 									'abr': {
 										'useDefaultABRRules': false
 									},
-									liveDelay: 0, 
-									liveCatchup: {
-									 	enabled: true
+									'bufferToKeep': 6,
+									'stableBufferTime': 6,
+									'bufferTimeAtTopQuality': 10,
+									'liveDelay': 0, 
+									'liveCatchup': {
+									 	'enabled': true
 									}
 								}
 							});
