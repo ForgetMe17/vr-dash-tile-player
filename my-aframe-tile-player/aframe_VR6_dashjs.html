@@ -14,17 +14,33 @@
 		<script src="FOVContentRule.js" class="code"></script>
 
 		<script>
+			// TODO:
+			// 1. Total QoE / Viewer's QoE / Content-based QoE -- Xu Yutong
+			// 2. Content-based ABR -- Feng Fangzheng
+			// 3. Popularity-based ABR (MEC later) -- Li Jinxi
+			// 3. Aframe assets on demands
+			// 4. Tiles sync -- Feng Fangzheng
+			// 5. Rendering
+			// 6. Visual UI -- Gao Nianzhen
+			// 7. QUIC/WebRTC -- Chen Jiaxi
+			// 8. MEC
+		</script>
+
+		<script>
 			// Global variables
 			var players = {};  // Container for players, which is easy for us to operate in them.
 			var buffer_empty_flag = {};  // Flags for players, showing whether the player is frozen or not.
 			var lon = 90, lat = 0;  // Longitude and latitude in spherical coordinates.
 			var pointerX, pointerY;  // Position of mouse click
 			var contents = {};  // Contents from JSON file
+
+			var normalizedTime = 0;  // Set the fastest mediaplayer's timeline as the normalized time
 			var myBufferLength = {};  // Data from monitor
 			var myAverageThroughput = {};  // Data from monitor
 			var myTime = {};  // Data from monitor
 			var myQuality = {};  // Data from monitor
-			var results = [];  // Data from contents analytics
+			
+			var csv_results = [];  // Data from contents analytics CSV files
 		</script>
 
 		<script>
@@ -140,6 +156,7 @@
             function initial() {
 				let video, url;
 				let count = 0;
+				// Video part
                 for (let i = 0; i < contents.face; i++) {
 					for (let j = 0; j < contents.row; j++) {
 						for (let k = 0; k < contents.col; k++) {
@@ -160,11 +177,11 @@
 								'streaming': {
 									'abr': {
 										'useDefaultABRRules': false
+									},
+									liveDelay: 0, 
+									liveCatchup: {
+									 	enabled: true
 									}
-									// liveDelay: null, 
-									// liveCatchup: {
-									// 	enabled: true
-									// }
 								}
 							});
 							// Add my custom quality switch rule, look at [].js to know more about the structure of a custom rule
@@ -173,6 +190,9 @@
 							switch (selectedRule) {
 								case "FOVRule":
 									players[count].addABRCustomRule('qualitySwitchRules', 'FOVRule', FOVRule);
+									break;
+								case "ThroughputRule":
+									players[count].addABRCustomRule('qualitySwitchRules', 'ThroughputRule', FOVRule);
 									break;
 								case "HighestBitrateRule":
 									players[count].addABRCustomRule('qualitySwitchRules', 'HighestBitrateRule', HighestBitrateRule);
@@ -232,7 +252,22 @@
 					myTime[count] = players[count].time();
 					myQuality[count] = players[count].getQualityFor("video");  //////////////////////////
 				}
+				// Set the fastest mediaplayer's timeline as the normalized time
+				setInterval(function () {
+					normalizedTime = players[0].time();
+					for (let i = 0; i < contents.face; i++) {
+						for (let j = 0; j < contents.row; j++) {
+							for (let k = 0; k < contents.col; k++) {
+								if (players[i * contents.row * contents.col + j * contents.col + k].time() > normalizedTime) {
+									normalizedTime = players[i * contents.row * contents.col + j * contents.col + k].time();
+								}
+							}
+						}
+					}
+				}, 10);
+				// Show the data in monitor (function below)
 				setInterval(updateStats, 500);
+				// Capture the pictures from mediaplayers
 				setInterval(function () {
 					for (let i = 0; i < contents.face; i++) {
 						for (let j = 0; j < contents.row; j++) {
@@ -248,6 +283,9 @@
 			// Show the data in monitor
 			function updateStats() {
 				document.querySelector("#stats").innerHTML = "Monitor:<br>";
+				document.querySelector("#stats").innerHTML += "Normalized time: ";
+				document.querySelector("#stats").innerHTML += normalizedTime;
+				document.querySelector("#stats").innerHTML += " s<br>";
 				for (let i = 0; i < contents.face; i++) {
 					for (let j = 0; j < contents.row; j++) {
 						for (let k = 0; k < contents.col; k++) {
@@ -353,6 +391,7 @@
 			</select>
 			<select id="rule">
 				<option value ="FOVRule">FOVRule</option>
+				<option value ="ThroughputRule">ThroughputRule</option>
 				<option value ="HighestBitrateRule">HighestBitrateRule</option>
 				<option value ="FOVContentRule">FOVContentRule</option>
 			</select>
@@ -362,7 +401,7 @@
 
 		<div id="captures" style="width: 768px;"></div>
 		
-		<input id="result_input" type="file" onchange="csv2json(this)">
+		<input id="csv_result_input" type="file" onchange="csv2json(this)">
 
 		<script>
 			// Translate the csv file loaded manually to json data
@@ -373,7 +412,7 @@
 				reader.onload = () => {		// Trigger when loaded
 					let fileData = reader.result	// Read the data
 					let lines = fileData.split("\n");
-					let result = [];
+					let csv_result = [];
 					let headers = lines[0].split(",");
 					for(let i = 1; i < lines.length; i++) {
 						let obj = {};
@@ -381,9 +420,9 @@
 						for(var j = 0; j < headers.length ; j++) {
 							obj[headers[j]] = currentline[j];
 						}
-						result.push(obj);
+						csv_result.push(obj);
 					}
-					results.push(result);
+					csv_results.push(csv_result);
 				}
 			}
 		</script>

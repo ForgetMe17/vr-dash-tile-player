@@ -40,6 +40,7 @@ import BaseURLController from './controllers/BaseURLController';
 import ManifestLoader from './ManifestLoader';
 import ErrorHandler from './utils/ErrorHandler';
 import Capabilities from './utils/Capabilities';
+import CapabilitiesFilter from './utils/CapabilitiesFilter';
 import TextTracks from './text/TextTracks';
 import RequestModifier from './utils/RequestModifier';
 import TextController from './text/TextController';
@@ -61,7 +62,7 @@ import Settings from '../core/Settings';
 import {
     getVersionString
 }
-from './../core/Version';
+    from './../core/Version';
 
 //Dash
 import SegmentBaseController from '../dash/controllers/SegmentBaseController';
@@ -74,7 +75,7 @@ import {
 import BASE64 from '../../externals/base64';
 import ISOBoxer from 'codem-isoboxer';
 import DashJSError from './vo/DashJSError';
-import { checkParameterType } from './utils/SupervisorTools';
+import {checkParameterType} from './utils/SupervisorTools';
 import ManifestUpdater from './ManifestUpdater';
 import URLUtils from '../streaming/utils/URLUtils';
 import BoxParser from './utils/BoxParser';
@@ -84,6 +85,7 @@ import BoxParser from './utils/BoxParser';
  * The media types
  * @typedef {("video" | "audio" | "text" | "fragmentedText" | "embeddedText" | "image")} MediaType
  */
+
 /* jscs:enable */
 
 /**
@@ -94,35 +96,35 @@ import BoxParser from './utils/BoxParser';
  */
 function MediaPlayer() {
     /**
-    * @constant {string} STREAMING_NOT_INITIALIZED_ERROR error string thrown when a function is called before the dash.js has been fully initialized
-    * @inner
-    */
+     * @constant {string} STREAMING_NOT_INITIALIZED_ERROR error string thrown when a function is called before the dash.js has been fully initialized
+     * @inner
+     */
     const STREAMING_NOT_INITIALIZED_ERROR = 'You must first call initialize() and set a source before calling this method';
     /**
-    * @constant {string} PLAYBACK_NOT_INITIALIZED_ERROR error string thrown when a function is called before the dash.js has been fully initialized
-    * @inner
-    */
+     * @constant {string} PLAYBACK_NOT_INITIALIZED_ERROR error string thrown when a function is called before the dash.js has been fully initialized
+     * @inner
+     */
     const PLAYBACK_NOT_INITIALIZED_ERROR = 'You must first call initialize() and set a valid source and view before calling this method';
     /**
-    * @constant {string} ELEMENT_NOT_ATTACHED_ERROR error string thrown when a function is called before the dash.js has received a reference of an HTML5 video element
-    * @inner
-    */
+     * @constant {string} ELEMENT_NOT_ATTACHED_ERROR error string thrown when a function is called before the dash.js has received a reference of an HTML5 video element
+     * @inner
+     */
     const ELEMENT_NOT_ATTACHED_ERROR = 'You must first call attachView() to set the video element before calling this method';
     /**
-    * @constant {string} SOURCE_NOT_ATTACHED_ERROR error string thrown when a function is called before the dash.js has received a valid source stream.
-    * @inner
-    */
+     * @constant {string} SOURCE_NOT_ATTACHED_ERROR error string thrown when a function is called before the dash.js has received a valid source stream.
+     * @inner
+     */
     const SOURCE_NOT_ATTACHED_ERROR = 'You must first call attachSource() with a valid source before calling this method';
     /**
-    * @constant {string} MEDIA_PLAYER_NOT_INITIALIZED_ERROR error string thrown when a function is called before the dash.js has been fully initialized.
-    * @inner
-    */
+     * @constant {string} MEDIA_PLAYER_NOT_INITIALIZED_ERROR error string thrown when a function is called before the dash.js has been fully initialized.
+     * @inner
+     */
     const MEDIA_PLAYER_NOT_INITIALIZED_ERROR = 'MediaPlayer not initialized!';
 
     const context = this.context;
     const eventBus = EventBus(context).getInstance();
     let settings = Settings(context).getInstance();
-    const debug = Debug(context).getInstance({settings: settings});
+    const debug = Debug(context).getInstance({ settings: settings });
 
     let instance,
         logger,
@@ -145,6 +147,7 @@ function MediaPlayer() {
         errHandler,
         baseURLController,
         capabilities,
+        capabilitiesFilter,
         streamController,
         gapController,
         playbackController,
@@ -155,7 +158,10 @@ function MediaPlayer() {
         textController,
         uriFragmentModel,
         domStorage,
-        segmentBaseController;
+        segmentBaseController,
+        licenseRequestFilters,
+        licenseResponseFilters,
+        customCapabilitiesFilters;
 
     /*
     ---------------------------------------------------------------------------
@@ -179,6 +185,9 @@ function MediaPlayer() {
         mediaPlayerModel = MediaPlayerModel(context).getInstance();
         videoModel = VideoModel(context).getInstance();
         uriFragmentModel = URIFragmentModel(context).getInstance();
+        licenseRequestFilters = [];
+        licenseResponseFilters = [];
+        customCapabilitiesFilters = [];
     }
 
     /**
@@ -194,6 +203,9 @@ function MediaPlayer() {
         }
         if (config.capabilities) {
             capabilities = config.capabilities;
+        }
+        if (config.capabilitiesFilter) {
+            capabilitiesFilter = config.capabilitiesFilter;
         }
         if (config.streamController) {
             streamController = config.streamController;
@@ -242,6 +254,7 @@ function MediaPlayer() {
         if (!capabilities) {
             capabilities = Capabilities(context).getInstance();
         }
+
         errHandler = ErrorHandler(context).getInstance();
 
         if (!capabilities.supportsMediaSource()) {
@@ -279,6 +292,10 @@ function MediaPlayer() {
 
         if (!gapController) {
             gapController = GapController(context).getInstance();
+        }
+
+        if (!capabilitiesFilter) {
+            capabilitiesFilter = CapabilitiesFilter(context).getInstance();
         }
 
         adapter = DashAdapter(context).getInstance();
@@ -390,6 +407,9 @@ function MediaPlayer() {
      */
     function destroy() {
         reset();
+        licenseRequestFilters = [];
+        licenseResponseFilters = [];
+        customCapabilitiesFilters = [];
         FactoryMaker.deleteSingletonInstances(context);
     }
 
@@ -750,7 +770,7 @@ function MediaPlayer() {
             t = streamController.getTimeRelativeToStreamId(t, streamId);
         } else if (playbackController.getIsDynamic()) {
             let metric = dashMetrics.getCurrentDVRInfo();
-            t = (metric === null) ? 0 : duration() - (metric.range.end - metric.time);
+            t = (metric === null || t === 0) ? 0 : Math.max(0, (t - metric.range.start));
         }
 
         return t;
@@ -771,16 +791,8 @@ function MediaPlayer() {
         let d = getVideoElement().duration;
 
         if (playbackController.getIsDynamic()) {
-
             let metric = dashMetrics.getCurrentDVRInfo();
-            let range;
-
-            if (!metric) {
-                return 0;
-            }
-
-            range = metric.range.end - metric.range.start;
-            d = range < metric.manifestInfo.DVRWindowSize ? range : metric.manifestInfo.DVRWindowSize;
+            d = metric ? (metric.range.end - metric.range.start) : 0;
         }
         return d;
     }
@@ -1493,6 +1505,7 @@ function MediaPlayer() {
      * This method allows to set media settings that will be used to pick the initial track. Format of the settings
      * is following: <br />
      * {lang: langValue (can be either a string or a regex to match),
+     *  index: indexValue,
      *  viewpoint: viewpointValue,
      *  audioChannelConfiguration: audioChannelConfigurationValue,
      *  accessibility: accessibilityValue,
@@ -1518,6 +1531,7 @@ function MediaPlayer() {
      * This method returns media settings that is used to pick the initial track. Format of the settings
      * is following:
      * {lang: langValue,
+     *  index: indexValue,
      *  viewpoint: viewpointValue,
      *  audioChannelConfiguration: audioChannelConfigurationValue,
      *  accessibility: accessibilityValue,
@@ -1592,10 +1606,13 @@ function MediaPlayer() {
      * if no initial media settings are set. If initial media settings are set this parameter will be ignored. Available options are:
      *
      * Constants.TRACK_SELECTION_MODE_HIGHEST_BITRATE
-     * this mode makes the player select the track with a highest bitrate. This mode is a default mode.
+     * This mode makes the player select the track with a highest bitrate. This mode is a default mode.
+     *
+     * Constants.TRACK_SELECTION_MODE_HIGHEST_EFFICIENCY
+     * This mode makes the player select the track with the lowest bitrate per pixel average.
      *
      * Constants.TRACK_SELECTION_MODE_WIDEST_RANGE
-     * this mode makes the player select the track with a widest range of bitrates
+     * This mode makes the player select the track with a widest range of bitrates.
      *
      * @param {string} mode
      * @memberof module:MediaPlayer
@@ -1669,6 +1686,102 @@ function MediaPlayer() {
         if (streamController) {
             streamController.setProtectionData(protectionData);
         }
+    }
+
+    /**
+     * Registers a license request filter. This enables application to manipulate/overwrite any request parameter and/or request data.
+     * The provided callback function shall return a promise that shall be resolved once the filter process is completed.
+     * The filters are applied in the order they are registered.
+     * @param {function} filter - the license request filter callback
+     * @memberof module:MediaPlayer
+     * @instance
+     */
+    function registerLicenseRequestFilter(filter) {
+        licenseRequestFilters.push(filter);
+        if (protectionController) {
+            protectionController.setLicenseRequestFilters(licenseRequestFilters);
+        }
+    }
+
+    /**
+     * Registers a license response filter. This enables application to manipulate/overwrite the response data
+     * The provided callback function shall return a promise that shall be resolved once the filter process is completed.
+     * The filters are applied in the order they are registered.
+     * @param {function} filter - the license response filter callback
+     * @memberof module:MediaPlayer
+     * @instance
+     */
+    function registerLicenseResponseFilter(filter) {
+        licenseResponseFilters.push(filter);
+        if (protectionController) {
+            protectionController.setLicenseResponseFilters(licenseResponseFilters);
+        }
+    }
+
+    /**
+     * Unregisters a license request filter.
+     * @param {function} filter - the license request filter callback
+     * @memberof module:MediaPlayer
+     * @instance
+     */
+    function unregisterLicenseRequestFilter(filter) {
+        unregisterFilter(licenseRequestFilters, filter);
+        if (protectionController) {
+            protectionController.setLicenseRequestFilters(licenseRequestFilters);
+        }
+    }
+
+    /**
+     * Unregisters a license response filter.
+     * @param {function} filter - the license response filter callback
+     * @memberof module:MediaPlayer
+     * @instance
+     */
+    function unregisterLicenseResponseFilter(filter) {
+        unregisterFilter(licenseResponseFilters, filter);
+        if (protectionController) {
+            protectionController.setLicenseResponseFilters(licenseResponseFilters);
+        }
+    }
+
+    /**
+     * Registers a custom capabilities filter. This enables application to filter representations to use.
+     * The provided callback function shall return a boolean based on whether or not to use the representation.
+     * The filters are applied in the order they are registered.
+     * @param {function} filter - the custom capabilities filter callback
+     * @memberof module:MediaPlayer
+     * @instance
+     */
+    function registerCustomCapabilitiesFilter(filter) {
+        customCapabilitiesFilters.push(filter);
+        if (capabilitiesFilter) {
+            capabilitiesFilter.setCustomCapabilitiesFilters(customCapabilitiesFilters);
+        }
+    }
+
+    /**
+     * Unregisters a custom capabilities filter.
+     * @param {function} filter - the custom capabilities filter callback
+     * @memberof module:MediaPlayer
+     * @instance
+     */
+    function unregisterCustomCapabilitiesFilter(filter) {
+        unregisterFilter(customCapabilitiesFilters, filter);
+        if (capabilitiesFilter) {
+            capabilitiesFilter.setCustomCapabilitiesFilters(customCapabilitiesFilters);
+        }
+    }
+
+    function unregisterFilter(filters, filter) {
+        let index = -1;
+        filters.some((item, i) => {
+            if (item === filter) {
+                index = i;
+                return true;
+            }
+        });
+        if (index < 0) return;
+        filters.splice(index, 1);
     }
 
     /*
@@ -1956,8 +2069,16 @@ function MediaPlayer() {
             streamController = StreamController(context).getInstance();
         }
 
+        capabilitiesFilter.setConfig({
+            capabilities,
+            adapter,
+            settings
+        });
+        capabilitiesFilter.setCustomCapabilitiesFilters(customCapabilitiesFilters);
+
         streamController.setConfig({
             capabilities: capabilities,
+            capabilitiesFilter,
             manifestLoader: manifestLoader,
             manifestModel: manifestModel,
             mediaPlayerModel: mediaPlayerModel,
@@ -2062,8 +2183,13 @@ function MediaPlayer() {
                 eventBus: eventBus,
                 events: Events,
                 BASE64: BASE64,
-                constants: Constants
+                constants: Constants,
+                cmcdModel: cmcdModel
             });
+            if (protectionController) {
+                protectionController.setLicenseRequestFilters(licenseRequestFilters);
+                protectionController.setLicenseResponseFilters(licenseResponseFilters);
+            }
             return protectionController;
         }
 
@@ -2306,6 +2432,12 @@ function MediaPlayer() {
         getProtectionController: getProtectionController,
         attachProtectionController: attachProtectionController,
         setProtectionData: setProtectionData,
+        registerLicenseRequestFilter: registerLicenseRequestFilter,
+        registerLicenseResponseFilter: registerLicenseResponseFilter,
+        unregisterLicenseRequestFilter: unregisterLicenseRequestFilter,
+        unregisterLicenseResponseFilter: unregisterLicenseResponseFilter,
+        registerCustomCapabilitiesFilter,
+        unregisterCustomCapabilitiesFilter,
         displayCaptionsOnTop: displayCaptionsOnTop,
         attachTTMLRenderingDiv: attachTTMLRenderingDiv,
         getCurrentTextTrackIndex: getCurrentTextTrackIndex,
