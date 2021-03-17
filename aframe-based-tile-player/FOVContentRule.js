@@ -8,6 +8,13 @@ function FOVContentRuleClass() {
     let context = this.context;
     let instance;
 
+    let FOV_weight = 0.5;
+    let content_weight = 0.5;
+    let content_curTile_bias = 0.1;
+    // All the priorites are from 0 to 100
+    // So far we set five levels (0, 25, 50, 75, 100) when computing priorite_FOV
+    // There is no specific level set up for computing priorite_Content
+
     function setup() {
     }
 
@@ -32,7 +39,7 @@ function FOVContentRuleClass() {
         var priorite_FOV = computeFOVQualities(info);  // From 0 to 100
         // Compute the bitrate according to Content
         var priorite_Content = computeContentQualities(info);  // From 0 to 100
-        var priorite_FOVContent = 0.5 * priorite_FOV + 0.5 * priorite_Content;
+        var priorite_FOVContent = FOV_weight * priorite_FOV + content_weight * priorite_Content;
 
         // Ask to switch to the bitrate according to FOV and Content
         switchRequest.quality = 0;
@@ -228,9 +235,9 @@ function FOVContentRuleClass() {
             let curTileResult = csv_results[curTileIndexString];
             let AverageResult = csv_results['average'];
             if (curTileResult >= AverageResult) {
-                RankingResult = Math.min(RankingResult + 0.1, 1);
+                RankingResult = Math.min(RankingResult + content_curTile_bias, 1);
             } else {
-                RankingResult = Math.max(RankingResult - 0.1, 0);
+                RankingResult = Math.max(RankingResult - content_curTile_bias, 0);
             }
         }
 

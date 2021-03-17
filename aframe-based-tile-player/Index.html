@@ -13,9 +13,9 @@
 		<script src="FOVContentRule.js" class="code"></script>
 
 		<script>
-			// TODO:
+			//// TODO:
 			// 1. Total QoE / Viewer's QoE / Content-based QoE -- Xu Yutong
-			// 2. Content-based ABR -- Feng Fangzheng
+			// 2. Content-based ABR -- Feng Fangzheng (V1_OFFLINE)
 			// 3. Popularity-based ABR (MEC later) -- Li Jinxi
 			// 3. Aframe assets on demands
 			// 4. Tiles sync -- Feng Fangzheng (DONE)
@@ -23,10 +23,11 @@
 			// 6. Visual UI -- Gao Nianzhen
 			// 7. QUIC/WebRTC -- Chen Jiaxi
 			// 8. MEC
+			// 9. Audio codec
 		</script>
 
 		<script>
-			// Global variables
+			//// Global variables
 			var players = {};  // Container for players, which is easy for us to operate in them.
 			var buffer_empty_flag = {};  // Flags for players, showing whether the player is frozen or not.
 			var lon = 90, lat = 0;  // Longitude and latitude in spherical coordinates.
@@ -43,7 +44,7 @@
 		</script>
 
 		<script>
-			// Reading json file
+			//// Loading sources
 			function getContents(url, callback) {
 				var xhr = new XMLHttpRequest();
 				xhr.open("GET", url, true);
@@ -60,6 +61,9 @@
 				contents = {};
 				getContents(url, function() {
 					contents = JSON.parse(this.responseText);
+					document.getElementById('Reset').style = "display: inline;";
+					document.getElementById('Link').style = "display: none;";
+					document.getElementById('Render').style = "display: inline;";
 					document.getElementById('json').value += " (Loaded!)";
 				});
 			}
@@ -77,12 +81,34 @@
 							}
 						}
 					}
+					document.getElementById('Reset').style = "display: inline;";
+					document.getElementById('Link').style = "display: none;";
+					document.getElementById('Render').style = "display: inline;";
 					document.getElementById('url').value += " (Loaded!)";
 				});
 			}
 		</script>
 
+		<script>
+			//// Translate the csv file loaded manually to json data
+			function csv2json(input) {
+				csv_results = {};  // Reset the data
+				let file = input.files[0];	// Load the file
+				let reader = new FileReader();	// Create a new FileReader instance
+				reader.readAsText(file);	// Read the CSV file
+				reader.onload = () => {		// Trigger when loaded
+					let fileData = reader.result	// Read the data
+					let lines = fileData.split("\n");
+					for(let i = 0; i < lines.length; i++) {
+						let currentline = lines[i].split(",");
+						csv_results[currentline[0]] = currentline[1];
+					}
+				}
+			}
+		</script>
+
         <script class="code">
+			//// Building mediaplayers
 			// Pause in all the players
 			function pause_all() {
 				let count = 0;
@@ -281,14 +307,17 @@
 						}
 					}
 				}, 2000);
+				document.getElementById('Load').style = "display: none;";
+				document.getElementById('Play').style = "display: inline;";
+				document.getElementById('Pause').style = "display: inline;";
 			}
 			
 			// Show the data in monitor
 			function updateStats() {
-				document.querySelector("#stats").innerHTML = "Monitor:<br>";
+				document.querySelector("#stats").innerHTML = "---STATS MONITOR---<br><br><br>";
 				document.querySelector("#stats").innerHTML += "Normalized time: ";
 				document.querySelector("#stats").innerHTML += normalizedTime;
-				document.querySelector("#stats").innerHTML += " s<br>";
+				document.querySelector("#stats").innerHTML += " s<br><br>";
 				for (let i = 0; i < contents.face; i++) {
 					for (let j = 0; j < contents.row; j++) {
 						for (let k = 0; k < contents.col; k++) {
@@ -341,6 +370,7 @@
 		</script>
 
 		<script>
+			//// Operations connected to buttons
 			// Open the iframe according to the number of faces, rows and cols
 			function aframe_init() {
 				if (contents == {}) {
@@ -349,6 +379,8 @@
 				document.getElementById( 'frame' ).src = "./" + contents.face + "_" + contents.row + "_" + contents.col + ".html";
 				lon = 90;
 				lat = 0;
+				document.getElementById('Render').style = "display: none;";
+				document.getElementById('Load').style = "display: inline;";
 			}
 			// Switch the source automatically according to the situation
 			function VOD_LIVE() {
@@ -366,6 +398,16 @@
 						break;
 				}
 			}
+			// Choosing a CSV file is necessary if FOVContentRule is selected
+			function isFOVContentRule() {
+				let index = document.getElementById("rule").selectedIndex;
+				let selectedRule = document.getElementById("rule").options[index].text;
+				if (selectedRule == "FOVContentRule") {
+					document.getElementById("csv_result_div").style = "display: inline;";
+				} else {
+					document.getElementById("csv_result_div").style = "display: none;";
+				}
+			}
 		</script>
 
 		<style>
@@ -381,11 +423,12 @@
 		<iframe id="frame" width="1000" height="500"></iframe>
 
 		<div style="z-index: 999; height: 22px; width: 500px;">
+			<button id="Reset" style="display: none;" onclick="location.reload();">Reset</button>
 			<button id="Link" onclick="document.getElementById('json').value != '' ? openJSON(document.getElementById('json').value) : openURLs();">Link</button>
-			<button id="aframe_init" onclick="aframe_init();">Frame</button>
-			<button id="Load" onclick="initial();">Load</button>
-			<button id="Play" onclick="play_all();">Play</button>
-			<button id="Pause" onclick="pause_all();">Pause</button>
+			<button id="Render" style="display: none;" onclick="aframe_init();">Render</button>
+			<button id="Load" style="display: none;" onclick="initial();">Load</button>
+			<button id="Play" style="display: none;" onclick="play_all();">Play</button>
+			<button id="Pause" style="display: none;" onclick="pause_all();">Pause</button>
 		</div>
 		
 		<div style="z-index: 999; color: #000000; height: 250px;">
@@ -398,40 +441,25 @@
 				<option value ="VOD">VOD</option>
 				<option value ="LIVE">LIVE</option>
 			</select>
-			<select id="rule">
+			<select id="rule" onchange="isFOVContentRule();">
 				<option value ="FOVRule">FOVRule</option>
 				<option value ="ThroughputRule">ThroughputRule</option>
 				<option value ="HighestBitrateRule">HighestBitrateRule</option>
 				<option value ="FOVContentRule">FOVContentRule</option>
 			</select>
 			<br>
-			<span id="stats" style="width: 500px; height: 1000px; position: fixed; top: 10px; right: 10px; background-color: whitesmoke;">Monitor Loaded.</span>
+			<span id="stats" style="width: 500px; height: 1000px; position: absolute; top: 10px; right: 10px; background-color: whitesmoke;">Monitor Loaded.</span>
 		</div>
 
 		<div id="captures" style="width: 768px;"></div>
 		
-		<input id="csv_result_input" type="file" onchange="csv2json(this)">
+		<div id="csv_result_div" style = "display: none;">
+			Choose a CSV file if FOVContentRule is selected: <input id="csv_result_input" type="file" onchange="csv2json(this)">
+		</div>
 
-		<script>
-			// Translate the csv file loaded manually to json data
-			function csv2json(input) {
-				let file = input.files[0];	// Load the file
-				let reader = new FileReader();	// Create a new FileReader instance
-				reader.readAsText(file);	// Read the CSV file
-				reader.onload = () => {		// Trigger when loaded
-					let fileData = reader.result	// Read the data
-					let lines = fileData.split("\n");
-					for(let i = 0; i < lines.length; i++) {
-						let currentline = lines[i].split(",");
-						csv_results[currentline[0]] = currentline[1];
-					}
-				}
-			}
-		</script>
 		
 		<script>
-			
-			// Enable the FOV event listener in iframe
+			//// Enable the FOV event listener in iframe
 			document.getElementById('frame').onload = function () {
 				document.getElementById('frame').contentDocument.addEventListener( 'pointerdown', onPointerDown );
 			}
@@ -464,7 +492,6 @@
 				document.getElementById('frame').contentDocument.removeEventListener( 'pointerup', onPointerUp );
 				console.log("Pointer ups. lon: "+ lon + "; lat: " + lat + ".");
 			}
-
 		</script>
         
 	</body>
