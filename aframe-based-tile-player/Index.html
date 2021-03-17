@@ -8,7 +8,6 @@
 		<title>(^_^)~ VR PLAYER ~(^_^)</title>
 		
 		<script src="./dash.js/dist/dash.all.debug.js"></script>
-		<script src="opencv.js"></script>
 		<script src="HighestBitrateRule.js" class="code"></script>
 		<script src="FOVRule.js" class="code"></script>
 		<script src="FOVContentRule.js" class="code"></script>
@@ -35,12 +34,12 @@
 			var contents = {};  // Contents from JSON file
 
 			var normalizedTime = 0;  // Set the fastest mediaplayer's timeline as the normalized time
-			var myBufferLength = {};  // Data from monitor
-			var myAverageThroughput = {};  // Data from monitor
-			var myTime = {};  // Data from monitor
-			var myQuality = {};  // Data from monitor
+			var playerBufferLength = {};  // Data from monitor
+			var playerAverageThroughput = {};  // Data from monitor
+			var playerTime = {};  // Data from monitor
+			var playerQuality = {};  // Data from monitor
 			
-			var csv_results = [];  // Data from contents analytics CSV files
+			var csv_results = {};  // Data from contents analytics CSV files
 		</script>
 
 		<script>
@@ -172,7 +171,8 @@
 									'count': count,
 									'face': i,
 									'row': j,
-									'col': k 
+									'col': k,
+									'duration': contents.duration
 								},
 								'streaming': {
 									'abr': {
@@ -214,10 +214,10 @@
 
 							// Initializing
 							players[count].initialize(video, url, false);
-							myBufferLength[count] = players[count].getBufferLength();;
-							myAverageThroughput[count] = players[count].getAverageThroughput("video");
-							myTime[count] = players[count].time();
-							myQuality[count] = players[count].getQualityFor("video");
+							playerBufferLength[count] = players[count].getBufferLength();;
+							playerAverageThroughput[count] = players[count].getAverageThroughput("video");
+							playerTime[count] = players[count].time();
+							playerQuality[count] = players[count].getQualityFor("video");
 
 							// Get video captures
 							let canvas = document.createElement( "canvas" );
@@ -250,10 +250,10 @@
 
 					// Initializing
 					players[count].initialize(audio, url, false);
-					myBufferLength[count] = players[count].getBufferLength();;
-					myAverageThroughput[count] = players[count].getAverageThroughput("video");  //////////////////////////
-					myTime[count] = players[count].time();
-					myQuality[count] = players[count].getQualityFor("video");  //////////////////////////
+					playerBufferLength[count] = players[count].getBufferLength();;
+					playerAverageThroughput[count] = players[count].getAverageThroughput("video");  //////////////////////////
+					playerTime[count] = players[count].time();
+					playerQuality[count] = players[count].getQualityFor("video");  //////////////////////////
 				}
 				// Set the fastest mediaplayer's timeline as the normalized time
 				setInterval(function () {
@@ -269,7 +269,7 @@
 					}
 				}, 10);
 				// Show the data in monitor (function below)
-				setInterval(updateStats, 500);
+				setInterval(updateStats, 100);
 				// Capture the pictures from mediaplayers
 				setInterval(function () {
 					for (let i = 0; i < contents.face; i++) {
@@ -292,44 +292,50 @@
 				for (let i = 0; i < contents.face; i++) {
 					for (let j = 0; j < contents.row; j++) {
 						for (let k = 0; k < contents.col; k++) {
-							myBufferLength[i * contents.row * contents.col + j * contents.col + k] = players[i * contents.row * contents.col + j * contents.col + k].getBufferLength();;
-							myAverageThroughput[i * contents.row * contents.col + j * contents.col + k] = players[i * contents.row * contents.col + j * contents.col + k].getAverageThroughput("video");
-							myTime[i * contents.row * contents.col + j * contents.col + k] = players[i * contents.row * contents.col + j * contents.col + k].time();
-							myQuality[i * contents.row * contents.col + j * contents.col + k] = players[i * contents.row * contents.col + j * contents.col + k].getQualityFor("video");							
+							playerBufferLength[i * contents.row * contents.col + j * contents.col + k] = players[i * contents.row * contents.col + j * contents.col + k].getBufferLength();;
+							playerAverageThroughput[i * contents.row * contents.col + j * contents.col + k] = players[i * contents.row * contents.col + j * contents.col + k].getAverageThroughput("video");
+							playerTime[i * contents.row * contents.col + j * contents.col + k] = players[i * contents.row * contents.col + j * contents.col + k].time();
+							playerQuality[i * contents.row * contents.col + j * contents.col + k] = players[i * contents.row * contents.col + j * contents.col + k].getQualityFor("video");
 							document.querySelector("#stats").innerHTML += ( "Video_" + i + "_" + j + "_" + k + ":<br>" );
 							document.querySelector("#stats").innerHTML += "Buffer level ";
-							document.querySelector("#stats").innerHTML += myBufferLength[i * contents.row * contents.col + j * contents.col + k];
+							document.querySelector("#stats").innerHTML += playerBufferLength[i * contents.row * contents.col + j * contents.col + k];
 							document.querySelector("#stats").innerHTML += " s<br>";
 							document.querySelector("#stats").innerHTML += "Average Throughput ";
-							document.querySelector("#stats").innerHTML += myAverageThroughput[i * contents.row * contents.col + j * contents.col + k];
+							document.querySelector("#stats").innerHTML += playerAverageThroughput[i * contents.row * contents.col + j * contents.col + k];
 							document.querySelector("#stats").innerHTML += " bps<br>";
 							document.querySelector("#stats").innerHTML += "Time ";
-							document.querySelector("#stats").innerHTML += myTime[i * contents.row * contents.col + j * contents.col + k];
+							document.querySelector("#stats").innerHTML += playerTime[i * contents.row * contents.col + j * contents.col + k];
 							document.querySelector("#stats").innerHTML += " s<br>";
 							document.querySelector("#stats").innerHTML += "Quality ";
-							document.querySelector("#stats").innerHTML += myQuality[i * contents.row * contents.col + j * contents.col + k];
-							document.querySelector("#stats").innerHTML += "<br><br>";
+							document.querySelector("#stats").innerHTML += playerQuality[i * contents.row * contents.col + j * contents.col + k];
+							document.querySelector("#stats").innerHTML += "<br>";
+							document.querySelector("#stats").innerHTML += "Total time: ";
+							document.querySelector("#stats").innerHTML += (playerBufferLength[i * contents.row * contents.col + j * contents.col + k] + playerTime[i * contents.row * contents.col + j * contents.col + k]);
+							document.querySelector("#stats").innerHTML += " s<br><br>";
 						}
 					}
 				}
 				if (contents.audio && contents.audio != "") {
-					myBufferLength[contents.face * contents.row * contents.col] = players[contents.face * contents.row * contents.col].getBufferLength();;
-					myAverageThroughput[contents.face * contents.row * contents.col] = players[contents.face * contents.row * contents.col].getAverageThroughput("video");  //////////////////////////
-					myTime[contents.face * contents.row * contents.col] = players[contents.face * contents.row * contents.col].time();
-					myQuality[contents.face * contents.row * contents.col] = players[contents.face * contents.row * contents.col].getQualityFor("video");  //////////////////////////
+					playerBufferLength[contents.face * contents.row * contents.col] = players[contents.face * contents.row * contents.col].getBufferLength();;
+					playerAverageThroughput[contents.face * contents.row * contents.col] = players[contents.face * contents.row * contents.col].getAverageThroughput("video");  //////////////////////////
+					playerTime[contents.face * contents.row * contents.col] = players[contents.face * contents.row * contents.col].time();
+					playerQuality[contents.face * contents.row * contents.col] = players[contents.face * contents.row * contents.col].getQualityFor("video");  //////////////////////////
 					document.querySelector("#stats").innerHTML += ( "Audio:<br>" );
 					document.querySelector("#stats").innerHTML += "Buffer level ";
-					document.querySelector("#stats").innerHTML += myBufferLength[contents.face * contents.row * contents.col];
+					document.querySelector("#stats").innerHTML += playerBufferLength[contents.face * contents.row * contents.col];
 					document.querySelector("#stats").innerHTML += " s<br>";
 					document.querySelector("#stats").innerHTML += "Average Throughput ";
-					document.querySelector("#stats").innerHTML += myAverageThroughput[contents.face * contents.row * contents.col];
+					document.querySelector("#stats").innerHTML += playerAverageThroughput[contents.face * contents.row * contents.col];
 					document.querySelector("#stats").innerHTML += " bps<br>";
 					document.querySelector("#stats").innerHTML += "Time ";
-					document.querySelector("#stats").innerHTML += myTime[contents.face * contents.row * contents.col];
+					document.querySelector("#stats").innerHTML += playerTime[contents.face * contents.row * contents.col];
 					document.querySelector("#stats").innerHTML += " s<br>";
 					document.querySelector("#stats").innerHTML += "Quality ";
-					document.querySelector("#stats").innerHTML += myQuality[contents.face * contents.row * contents.col];
-					document.querySelector("#stats").innerHTML += "<br><br>";
+					document.querySelector("#stats").innerHTML += playerQuality[contents.face * contents.row * contents.col];
+					document.querySelector("#stats").innerHTML += "<br>";
+					document.querySelector("#stats").innerHTML += "Total time: ";
+					document.querySelector("#stats").innerHTML += (playerBufferLength[contents.face * contents.row * contents.col] + playerTime[contents.face * contents.row * contents.col]);
+					document.querySelector("#stats").innerHTML += " s<br><br>";
 				}
 			}
 		</script>
@@ -415,17 +421,10 @@
 				reader.onload = () => {		// Trigger when loaded
 					let fileData = reader.result	// Read the data
 					let lines = fileData.split("\n");
-					let csv_result = [];
-					let headers = lines[0].split(",");
-					for(let i = 1; i < lines.length; i++) {
-						let obj = {};
+					for(let i = 0; i < lines.length; i++) {
 						let currentline = lines[i].split(",");
-						for(var j = 0; j < headers.length ; j++) {
-							obj[headers[j]] = currentline[j];
-						}
-						csv_result.push(obj);
+						csv_results[currentline[0]] = currentline[1];
 					}
-					csv_results.push(csv_result);
 				}
 			}
 		</script>
