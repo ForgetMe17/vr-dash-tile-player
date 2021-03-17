@@ -20,7 +20,7 @@ Default: Using FOVRule as default. If need please change the config in HTML page
 ##### Player over three.js (No more updates)
 
 1. Run the HTML file via HTTP address (e.g., http://localhost/vr-dash-tile-player/CSS_VR6_dashjs.html).
-2. Confirm the location of JSON file and the Rule you want to use in HTML page, then click "link".
+2. Confirm the location of JSON file and the Rule you want to use in HTML page, then click "link". (Choosing a CSV file is necessary if FOVContentRule is selected.)
 3. Click "load" to initialize MediaPlayer according to JSON description.
 4. Click "Play" and "Pause" to control the player.
 
