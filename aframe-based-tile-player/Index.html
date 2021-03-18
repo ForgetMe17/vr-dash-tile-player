@@ -8,8 +8,9 @@
 		<title>(^_^)~ VR PLAYER ~(^_^)</title>
 		
 		<script src="./dash.js/dist/dash.all.debug.js"></script>
-		<script src="HighestBitrateRule.js" class="code"></script>
 		<script src="FOVRule.js" class="code"></script>
+		<script src="MyThroughputRule.js" class="code"></script>
+		<script src="HighestBitrateRule.js" class="code"></script>
 		<script src="FOVContentRule.js" class="code"></script>
 
 		<script>
@@ -223,9 +224,9 @@
 								case "FOVRule":
 									players[count].addABRCustomRule('qualitySwitchRules', 'FOVRule', FOVRule);
 									break;
-								case "ThroughputRule":
-									players[count].addABRCustomRule('qualitySwitchRules', 'ThroughputRule', FOVRule);
-									break;
+								// case "ThroughputRule":
+								// 	players[count].addABRCustomRule('qualitySwitchRules', 'MyThroughputRule', MyThroughputRule);
+								// 	break;
 								case "HighestBitrateRule":
 									players[count].addABRCustomRule('qualitySwitchRules', 'HighestBitrateRule', HighestBitrateRule);
 									break;
@@ -233,13 +234,19 @@
 									players[count].addABRCustomRule('qualitySwitchRules', 'FOVContentRule', FOVContentRule);
 									break;									
 								default:
-									players[count].addABRCustomRule('qualitySwitchRules', 'FOVRule', FOVRule);
+									players[count].updateSettings({
+										'streaming': {
+											'abr': {
+												'useDefaultABRRules': true
+											}
+										}
+									});
 									break;
 							}
 
 							// Turn on the event listeners and add actions for triggers 
-							players[count].on(dashjs.MediaPlayer.events["BUFFER_EMPTY"],buffer_empty_event);
-							players[count].on(dashjs.MediaPlayer.events["BUFFER_LOADED"],buffer_loaded_event);
+							// players[count].on(dashjs.MediaPlayer.events["BUFFER_EMPTY"],buffer_empty_event);
+							// players[count].on(dashjs.MediaPlayer.events["BUFFER_LOADED"],buffer_loaded_event);
 
 							// Initializing
 							players[count].initialize(video, url, false);
@@ -357,9 +364,9 @@
 				}
 				if (contents.audio && contents.audio != "") {
 					playerBufferLength[contents.face * contents.row * contents.col] = players[contents.face * contents.row * contents.col].getBufferLength();
-					playerAverageThroughput[contents.face * contents.row * contents.col] = players[contents.face * contents.row * contents.col].getAverageThroughput("video");  //////////////////////////
+					playerAverageThroughput[contents.face * contents.row * contents.col] = players[contents.face * contents.row * contents.col].getAverageThroughput("audio");
 					playerTime[contents.face * contents.row * contents.col] = players[contents.face * contents.row * contents.col].time();
-					playerQuality[contents.face * contents.row * contents.col] = players[contents.face * contents.row * contents.col].getQualityFor("video");  //////////////////////////
+					playerQuality[contents.face * contents.row * contents.col] = players[contents.face * contents.row * contents.col].getQualityFor("audio");
 					document.querySelector("#stats").innerHTML += ( "Audio:<br>" );
 					document.querySelector("#stats").innerHTML += "Buffer level ";
 					document.querySelector("#stats").innerHTML += playerBufferLength[contents.face * contents.row * contents.col].toFixed(2);
@@ -454,9 +461,10 @@
 			</select>
 			<select id="rule" onchange="isFOVContentRule();">
 				<option value ="FOVRule">FOVRule</option>
-				<option value ="ThroughputRule">ThroughputRule</option>
+				<!-- <option value ="ThroughputRule">ThroughputRule</option>  -->
 				<option value ="HighestBitrateRule">HighestBitrateRule</option>
 				<option value ="FOVContentRule">FOVContentRule</option>
+				<option value ="DefaultRule">DefaultRule</option>
 			</select>
 			<br>
 			<span id="stats" style="width: 300px; position: absolute; top: 10px; right: 10px; background-color: whitesmoke;">Monitor Loaded.</span>
