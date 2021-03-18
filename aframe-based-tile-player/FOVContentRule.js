@@ -213,8 +213,8 @@ function FOVContentRuleClass() {
             return 0;
         }
 
-        if (!csv_results) {
-            console.log("Lack of csv_results when computing content-based qualities!!!");
+        if (!ssresults) {
+            console.log("Lack of ssresults when computing content-based qualities!!!");
             return 0;
         }
 
@@ -222,20 +222,20 @@ function FOVContentRuleClass() {
         let currentTime = parseInt(playerTime[info.face * contents.row * contents.col + info.row * contents.col + info.col] + playerBufferLength[info.face * contents.row * contents.col + info.row * contents.col + info.col]);
         let currentIndex = parseInt(currentTime / info.duration) + 1;
         let currentIndexString = info.face.toString() + "_" + (info.row * contents.col + info.col).toString() + "_" + currentIndex.toString();
-        if (csv_results[currentIndexString] == NaN || csv_results['maximum'] == NaN || csv_results['minimum'] == NaN) {
+        if (ssresults[currentIndexString] == NaN || ssresults['maximum'] == NaN || ssresults['minimum'] == NaN) {
             console.log("Lack of current/maximum/minimum csv_result when computing content-based qualities!!!");
             return 0;
         }
-        let currentResult = csv_results[currentIndexString];
-        let MaximumResult = csv_results['maximum'];
-        let MinimumResult = csv_results['minimum'];
+        let currentResult = ssresults[currentIndexString];
+        let MaximumResult = ssresults['maximum'];
+        let MinimumResult = ssresults['minimum'];
         let RankingResult = (currentResult - MinimumResult) / (MaximumResult - MinimumResult);
 
         // gains from tile's level
         let curTileIndexString = info.face.toString() + "_" + (info.row * contents.col + info.col).toString();
-        if (csv_results[curTileIndexString] != NaN || csv_results['average'] != NaN) {
-            let curTileResult = csv_results[curTileIndexString];
-            let AverageResult = csv_results['average'];
+        if (ssresults[curTileIndexString] != NaN || ssresults['average'] != NaN) {
+            let curTileResult = ssresults[curTileIndexString];
+            let AverageResult = ssresults['average'];
             if (curTileResult >= AverageResult) {
                 RankingResult = Math.min(RankingResult + content_curTile_bias, 1);
             } else {

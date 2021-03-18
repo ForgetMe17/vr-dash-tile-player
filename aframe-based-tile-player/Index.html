@@ -44,7 +44,7 @@
 			var playerFOVScore = {}  // Data from monitor
 			var playerContentScore = {}  // Data from monitor
 			
-			var csv_results = {};  // Data from contents analytics CSV files
+			var ssresults = {};  // Data from contents analytics CSV files
 		</script>
 
 		<script>
@@ -65,6 +65,11 @@
 				contents = {};
 				getContents(url, function() {
 					contents = JSON.parse(this.responseText);
+					if (contents.ssresults != "") {
+						getContents(contents.baseUrl + contents.ssresults, function() {
+							ssresults = JSON.parse(this.responseText);
+						});
+					}
 					document.getElementById('Reset').style = "display: inline;";
 					document.getElementById('Link').style = "display: none;";
 					document.getElementById('Render').style = "display: inline;";
@@ -90,24 +95,6 @@
 					document.getElementById('Render').style = "display: inline;";
 					document.getElementById('url').value += " (Loaded!)";
 				});
-			}
-		</script>
-
-		<script>
-			//// Translate the csv file loaded manually to json data
-			function csv2json(input) {
-				csv_results = {};  // Reset the data
-				let file = input.files[0];	// Load the file
-				let reader = new FileReader();	// Create a new FileReader instance
-				reader.readAsText(file);	// Read the CSV file
-				reader.onload = () => {		// Trigger when loaded
-					let fileData = reader.result	// Read the data
-					let lines = fileData.split("\n");
-					for(let i = 0; i < lines.length; i++) {
-						let currentline = lines[i].split(",");
-						csv_results[currentline[0]] = currentline[1];
-					}
-				}
 			}
 		</script>
 
@@ -416,16 +403,6 @@
 						break;
 				}
 			}
-			// Choosing a CSV file is necessary if FOVContentRule is selected
-			function isFOVContentRule() {
-				let index = document.getElementById("rule").selectedIndex;
-				let selectedRule = document.getElementById("rule").options[index].text;
-				if (selectedRule == "FOVContentRule") {
-					document.getElementById("csv_result_div").style = "display: inline;";
-				} else {
-					document.getElementById("csv_result_div").style = "display: none;";
-				}
-			}
 		</script>
 
 		<style>
@@ -459,7 +436,7 @@
 				<option value ="VOD">VOD</option>
 				<option value ="LIVE">LIVE</option>
 			</select>
-			<select id="rule" onchange="isFOVContentRule();">
+			<select id="rule">
 				<option value ="FOVRule">FOVRule</option>
 				<!-- <option value ="ThroughputRule">ThroughputRule</option>  -->
 				<option value ="HighestBitrateRule">HighestBitrateRule</option>
@@ -471,10 +448,6 @@
 		</div>
 
 		<div id="captures" style="width: 768px;"></div>
-		
-		<div id="csv_result_div" style = "display: none;">
-			Choose a CSV file if FOVContentRule is selected: <input id="csv_result_input" type="file" onchange="csv2json(this)">
-		</div>
 
 		
 		<script>
