@@ -40,10 +40,12 @@ function FOVContentRuleClass() {
         // Compute the bitrate according to Content
         var priorite_Content = computeContentQualities(info);  // From 0 to 100
         var priorite_FOVContent = FOV_weight * priorite_FOV + content_weight * priorite_Content;
+        playerFOVScore[info.count] = priorite_FOV;
+        playerContentScore[info.count] = priorite_Content;
 
         // Ask to switch to the bitrate according to FOV and Content
         switchRequest.quality = 0;
-        switchRequest.reason = 'Always switching to the bitrate according to FOV';
+        switchRequest.reason = 'Always switching to the bitrate according to FOV and content';
         switchRequest.priority = SwitchRequest.PRIORITY.STRONG;
 
         const bitrateList = abrController.getBitrateList(mediaInfo);  // List of all the selectable bitrates (A - Z)
@@ -240,7 +242,7 @@ function FOVContentRuleClass() {
                 RankingResult = Math.max(RankingResult - content_curTile_bias, 0);
             }
         }
-
+        
         return RankingResult.toFixed(2) * 100;
     }
 

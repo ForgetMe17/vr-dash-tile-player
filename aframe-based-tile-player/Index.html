@@ -19,11 +19,12 @@
 			// 3. Popularity-based ABR (MEC later) -- Li Jinxi
 			// 3. Aframe assets on demands
 			// 4. Tiles sync -- Feng Fangzheng (DONE)
-			// 5. Rendering
-			// 6. Visual UI -- Gao Nianzhen
-			// 7. QUIC/WebRTC -- Chen Jiaxi
-			// 8. MEC
-			// 9. Audio codec
+			// 5. ERP to CMP optimization -- Li Jinxi
+			// 6. Rendering
+			// 7. Visual UI -- Gao Nianzhen
+			// 8. QUIC/WebRTC -- Chen Jiaxi
+			// 9. MEC
+			// 10. Audio codec
 		</script>
 
 		<script>
@@ -39,6 +40,8 @@
 			var playerAverageThroughput = {};  // Data from monitor
 			var playerTime = {};  // Data from monitor
 			var playerQuality = {};  // Data from monitor
+			var playerFOVScore = {}  // Data from monitor
+			var playerContentScore = {}  // Data from monitor
 			
 			var csv_results = {};  // Data from contents analytics CSV files
 		</script>
@@ -244,6 +247,8 @@
 							playerAverageThroughput[count] = players[count].getAverageThroughput("video");
 							playerTime[count] = players[count].time();
 							playerQuality[count] = players[count].getQualityFor("video");
+							playerFOVScore[count] = 0;
+							playerContentScore[count] = 0;
 
 							// Get video captures
 							let canvas = document.createElement( "canvas" );
@@ -306,7 +311,7 @@
 							}
 						}
 					}
-				}, 2000);
+				}, 500);
 				document.getElementById('Load').style = "display: none;";
 				document.getElementById('Play').style = "display: inline;";
 				document.getElementById('Pause').style = "display: inline;";
@@ -316,7 +321,7 @@
 			function updateStats() {
 				document.querySelector("#stats").innerHTML = "---STATS MONITOR---<br><br><br>";
 				document.querySelector("#stats").innerHTML += "Normalized time: ";
-				document.querySelector("#stats").innerHTML += normalizedTime;
+				document.querySelector("#stats").innerHTML += normalizedTime.toFixed(2);
 				document.querySelector("#stats").innerHTML += " s<br><br>";
 				for (let i = 0; i < contents.face; i++) {
 					for (let j = 0; j < contents.row; j++) {
@@ -327,43 +332,49 @@
 							playerQuality[i * contents.row * contents.col + j * contents.col + k] = players[i * contents.row * contents.col + j * contents.col + k].getQualityFor("video");
 							document.querySelector("#stats").innerHTML += ( "Video_" + i + "_" + j + "_" + k + ":<br>" );
 							document.querySelector("#stats").innerHTML += "Buffer level ";
-							document.querySelector("#stats").innerHTML += playerBufferLength[i * contents.row * contents.col + j * contents.col + k];
+							document.querySelector("#stats").innerHTML += playerBufferLength[i * contents.row * contents.col + j * contents.col + k].toFixed(2);
 							document.querySelector("#stats").innerHTML += " s<br>";
 							document.querySelector("#stats").innerHTML += "Average Throughput ";
-							document.querySelector("#stats").innerHTML += playerAverageThroughput[i * contents.row * contents.col + j * contents.col + k];
+							document.querySelector("#stats").innerHTML += playerAverageThroughput[i * contents.row * contents.col + j * contents.col + k].toFixed(0);
 							document.querySelector("#stats").innerHTML += " bps<br>";
 							document.querySelector("#stats").innerHTML += "Time ";
-							document.querySelector("#stats").innerHTML += playerTime[i * contents.row * contents.col + j * contents.col + k];
+							document.querySelector("#stats").innerHTML += playerTime[i * contents.row * contents.col + j * contents.col + k].toFixed(2);
 							document.querySelector("#stats").innerHTML += " s<br>";
 							document.querySelector("#stats").innerHTML += "Quality ";
 							document.querySelector("#stats").innerHTML += playerQuality[i * contents.row * contents.col + j * contents.col + k];
 							document.querySelector("#stats").innerHTML += "<br>";
+							document.querySelector("#stats").innerHTML += "FOV Score ";
+							document.querySelector("#stats").innerHTML += playerFOVScore[i * contents.row * contents.col + j * contents.col + k];
+							document.querySelector("#stats").innerHTML += "<br>";
+							document.querySelector("#stats").innerHTML += "Content Score ";
+							document.querySelector("#stats").innerHTML += playerContentScore[i * contents.row * contents.col + j * contents.col + k];
+							document.querySelector("#stats").innerHTML += "<br>";
 							document.querySelector("#stats").innerHTML += "Total time: ";
-							document.querySelector("#stats").innerHTML += (playerBufferLength[i * contents.row * contents.col + j * contents.col + k] + playerTime[i * contents.row * contents.col + j * contents.col + k]);
+							document.querySelector("#stats").innerHTML += (playerBufferLength[i * contents.row * contents.col + j * contents.col + k] + playerTime[i * contents.row * contents.col + j * contents.col + k]).toFixed(2);
 							document.querySelector("#stats").innerHTML += " s<br><br>";
 						}
 					}
 				}
 				if (contents.audio && contents.audio != "") {
-					playerBufferLength[contents.face * contents.row * contents.col] = players[contents.face * contents.row * contents.col].getBufferLength();;
+					playerBufferLength[contents.face * contents.row * contents.col] = players[contents.face * contents.row * contents.col].getBufferLength();
 					playerAverageThroughput[contents.face * contents.row * contents.col] = players[contents.face * contents.row * contents.col].getAverageThroughput("video");  //////////////////////////
 					playerTime[contents.face * contents.row * contents.col] = players[contents.face * contents.row * contents.col].time();
 					playerQuality[contents.face * contents.row * contents.col] = players[contents.face * contents.row * contents.col].getQualityFor("video");  //////////////////////////
 					document.querySelector("#stats").innerHTML += ( "Audio:<br>" );
 					document.querySelector("#stats").innerHTML += "Buffer level ";
-					document.querySelector("#stats").innerHTML += playerBufferLength[contents.face * contents.row * contents.col];
+					document.querySelector("#stats").innerHTML += playerBufferLength[contents.face * contents.row * contents.col].toFixed(2);
 					document.querySelector("#stats").innerHTML += " s<br>";
 					document.querySelector("#stats").innerHTML += "Average Throughput ";
-					document.querySelector("#stats").innerHTML += playerAverageThroughput[contents.face * contents.row * contents.col];
+					document.querySelector("#stats").innerHTML += playerAverageThroughput[contents.face * contents.row * contents.col].toFixed(0);
 					document.querySelector("#stats").innerHTML += " bps<br>";
 					document.querySelector("#stats").innerHTML += "Time ";
-					document.querySelector("#stats").innerHTML += playerTime[contents.face * contents.row * contents.col];
+					document.querySelector("#stats").innerHTML += playerTime[contents.face * contents.row * contents.col].toFixed(2);
 					document.querySelector("#stats").innerHTML += " s<br>";
 					document.querySelector("#stats").innerHTML += "Quality ";
 					document.querySelector("#stats").innerHTML += playerQuality[contents.face * contents.row * contents.col];
 					document.querySelector("#stats").innerHTML += "<br>";
 					document.querySelector("#stats").innerHTML += "Total time: ";
-					document.querySelector("#stats").innerHTML += (playerBufferLength[contents.face * contents.row * contents.col] + playerTime[contents.face * contents.row * contents.col]);
+					document.querySelector("#stats").innerHTML += (playerBufferLength[contents.face * contents.row * contents.col] + playerTime[contents.face * contents.row * contents.col]).toFixed(2);
 					document.querySelector("#stats").innerHTML += " s<br><br>";
 				}
 			}
@@ -448,7 +459,7 @@
 				<option value ="FOVContentRule">FOVContentRule</option>
 			</select>
 			<br>
-			<span id="stats" style="width: 500px; height: 1000px; position: absolute; top: 10px; right: 10px; background-color: whitesmoke;">Monitor Loaded.</span>
+			<span id="stats" style="width: 300px; position: absolute; top: 10px; right: 10px; background-color: whitesmoke;">Monitor Loaded.</span>
 		</div>
 
 		<div id="captures" style="width: 768px;"></div>

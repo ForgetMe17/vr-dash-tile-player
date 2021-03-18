@@ -30,6 +30,7 @@ function FOVRuleClass() {
         // Compute the bitrate according to FOV
         var info = abrController.getSettings().info;
         var priorite = computeQualities(info);  // From 0 to 100
+        playerFOVScore[info.count] = priorite;
 
         // Ask to switch to the bitrate according to FOV
         switchRequest.quality = 0;
@@ -50,7 +51,12 @@ function FOVRuleClass() {
     function computeQualities(info) {
 
         if (!info) {
-            console.log("Lack of ID when computing qualities!!!");
+            console.log("Lack of info when computing FOV-based qualities!!!");
+            return 0;
+        }
+
+        if (lat == NaN || lon == NaN || lat > 90 || lat < -90 || lon > 360 || lon < 0) {
+            console.log("Wrong lat & lon when computing FOV-based qualities!!!");
             return 0;
         }
     
