@@ -29,24 +29,34 @@
 		</script>
 
 		<script>
-			//// Global variables
-			var players = {};  // Container for players, which is easy for us to operate in them.
-			var buffer_empty_flag = {};  // Flags for players, showing whether the player is frozen or not.
+			//// Global variables for storage
+			var players = [];  // Container for players, which is easy for us to operate in them.
+			var buffer_empty_flag = [];  // Flags for players, showing whether the player is frozen or not.
 			var lon = 90, lat = 0;  // Longitude and latitude in spherical coordinates.
 			var pointerX, pointerY;  // Position of mouse click
 			var contents = {};  // Contents from JSON file
 
 			var normalizedTime = 0;  // Set the fastest mediaplayer's timeline as the normalized time
 			var TotalThroughput = 0;  // Data from monitor
-			var playerBufferLength = {};  // Data from monitor
-			var playerAverageThroughput = {};  // Data from monitor
-			var playerTime = {};  // Data from monitor
-			var playerQuality = {};  // Data from monitor
-			var playerFOVScore = {}  // Data from monitor
-			var playerContentScore = {}  // Data from monitor
+			var playerBufferLength = [];  // Data from monitor
+			var playerAverageThroughput = [];  // Data from monitor
+			var playerTime = [];  // Data from monitor
+			var playerQuality = [];  // Data from monitor
+			var playerFOVScore = [];  // Data from monitor
+			var playerContentScore = [];  // Data from monitor
 			
 			var requestList = []; // Data from all HTTPRequests
 			var ssresults = {};  // Data from contents analytics CSV files
+
+			//// Global variables (flexible)
+			const captureWidth = 128;  // [For capturing each frame] Set the width of the capture pictures
+			const captureHeight = 128;  // [For capturing each frame] Set the height of the capture pictures
+			const requestDuration = 1000;  // [For computing total throughput] Set the duration we consider
+			const requestLayBack = 1000;  // [For computing total throughput] Set the lay-back time for avoiding the on-going requests
+			const rotateRatio = 0.1148;  // [For focusing FOV] Set the ratio of rotating when switching the angle of view
+			const playerBufferToKeep = 6;  // [For initializing mediaplayers] Allows you to modify the buffer that is kept in source buffer in seconds
+			const playerStableBufferTime = 6;  // [For initializing mediaplayers] The time that the internal buffer target will be set to post startup/seeks (NOT top quality)
+			const playerBufferTimeAtTopQuality = 10;  // [For initializing mediaplayers] The time that the internal buffer target will be set to once playing the top quality
 		</script>
 
 		<script>
@@ -198,9 +208,9 @@
 									'abr': {
 										'useDefaultABRRules': false
 									},
-									'bufferToKeep': 6,
-									'stableBufferTime': 6,
-									'bufferTimeAtTopQuality': 10,
+									'bufferToKeep': playerBufferToKeep,
+									'stableBufferTime': playerStableBufferTime,
+									'bufferTimeAtTopQuality': playerBufferTimeAtTopQuality,
 									'fastswitchenabled': true,
 									'liveDelay': 0, 
 									'liveCatchup': {
@@ -248,13 +258,6 @@
 							playerFOVScore[count] = 0;
 							playerContentScore[count] = 0;
 
-							// Get video captures
-							let canvas = document.createElement( "canvas" );
-							canvas.id = "capture_" + i + "_" + j + "_" + k;
-							canvas.width = 256;
-    						canvas.height = 256;
-							document.getElementById("captures").appendChild(canvas);
-							
 							count++;
 						}
 					}
@@ -274,8 +277,8 @@
 					});
 
 					// Turn on the event listeners and add actions for triggers 
-					players[count].on(dashjs.MediaPlayer.events["BUFFER_EMPTY"],buffer_empty_event);
-					players[count].on(dashjs.MediaPlayer.events["BUFFER_LOADED"],buffer_loaded_event);
+					players[count].on(dashjs.MediaPlayer.events["BUFFER_EMPTY"], buffer_empty_event);
+					players[count].on(dashjs.MediaPlayer.events["BUFFER_LOADED"], buffer_loaded_event);
 
 					// Initializing
 					players[count].initialize(audio, url, false);
@@ -283,6 +286,18 @@
 					playerAverageThroughput[count] = players[count].getAverageThroughput("audio");
 					playerTime[count] = players[count].time();
 					playerQuality[count] = players[count].getQualityFor("audio");
+				}
+				// Get video captures
+				for (let i = 0; i < contents.face; i++) {
+					for (let j = 0; j < contents.row; j++) {
+						for (let k = 0; k < contents.col; k++) {
+							let canvas = document.createElement( "canvas" );
+							canvas.id = "capture_" + i + "_" + j + "_" + k;
+							canvas.width = captureWidth;
+    						canvas.height = captureHeight;
+							document.getElementById("captures").appendChild(canvas);
+						}
+					}
 				}
 				// Set the fastest mediaplayer's timeline as the normalized time
 				setInterval(setNormalizedTime, 10);
@@ -295,7 +310,7 @@
 					for (let i = 0; i < contents.face; i++) {
 						for (let j = 0; j < contents.row; j++) {
 							for (let k = 0; k < contents.col; k++) {
-								document.getElementById("capture_" + i + "_" + j + "_" + k).getContext('2d').drawImage(document.getElementById( "frame" ).contentWindow.document.querySelector("#" + "video_" + i + "_" + j + "_" + k), 0, 0, 256, 256);
+								document.getElementById("capture_" + i + "_" + j + "_" + k).getContext('2d').drawImage(document.getElementById( "frame" ).contentWindow.document.querySelector("#" + "video_" + i + "_" + j + "_" + k), 0, 0, captureWidth, captureHeight);
 								// img.src = canvas.toDataURL("image/png");
 							}
 						}
@@ -322,23 +337,41 @@
 
 			// Compute total throughput according to recent HTTP requests (Total data in ONE second)
 			function computeTotalThroughput() {
-				// Get current time
-				const curTime = new Date().getTime();
-				let TotalDataInAnInterval = 0;
+				const precurTime = new Date().getTime();  // Get current time
+				const curTime = precurTime - requestLayBack;
+				let TotalDataInAnInterval = 0;  // Byte
+				let TotalTimeInAnInterval = requestDuration;  // ms
 				let requestListLength = requestList.length;
 				let requestListIndex = requestListLength - 1;
-				while (requestListLength > 0 && requestListIndex >= 0 && requestList[requestListIndex]._tfinish.getTime() > curTime - 1000) {
-					let requestDownloadBytes = requestList[requestListIndex].trace.reduce((a, b) => a + b.b[0], 0);
+				let requestTimeIndex = curTime;
+				while (requestListLength > 0 && requestListIndex >= 0) {
 					let requestFinishTime = requestList[requestListIndex]._tfinish.getTime();
 					let requestResponseTime  = requestList[requestListIndex].tresponse.getTime();
-					if (requestResponseTime > curTime - 1000) {
-						TotalDataInAnInterval += requestDownloadBytes;
-					} else {
-						TotalDataInAnInterval += ( requestDownloadBytes * ( ( requestFinishTime - (curTime - 1000) ) / ( requestFinishTime - requestResponseTime ) ) );
+					if (requestFinishTime > curTime - requestDuration && requestResponseTime < curTime) {
+						// Accumulate the downloaded data (Byte)
+						let requestDownloadBytes = requestList[requestListIndex].trace.reduce((a, b) => a + b.b[0], 0);
+						if (requestResponseTime > curTime - requestDuration) {
+							if (requestFinishTime <= curTime) {
+								TotalDataInAnInterval += requestDownloadBytes;
+							} else {
+								TotalDataInAnInterval += ( requestDownloadBytes * ( ( curTime - requestResponseTime ) / ( requestFinishTime - requestResponseTime ) ) );
+							}
+						} else {
+							if (requestFinishTime <= curTime) {
+								TotalDataInAnInterval += ( requestDownloadBytes * ( ( requestFinishTime - (curTime - requestDuration) ) / ( requestFinishTime - requestResponseTime ) ) );
+							} else {
+								TotalDataInAnInterval += ( requestDownloadBytes * ( requestDuration / ( requestFinishTime - requestResponseTime ) ) );
+							}
+						}
+						// Subtract the free time (ms)
+						if (requestTimeIndex > requestFinishTime) {
+							TotalTimeInAnInterval -= (requestTimeIndex - requestFinishTime);
+						}
+						requestTimeIndex = requestResponseTime;						
 					}
 					requestListIndex--;
 				}
-				TotalThroughput = Math.round((8 * TotalDataInAnInterval));  // bps
+				TotalThroughput = Math.round((8 * TotalDataInAnInterval) / (TotalTimeInAnInterval / 1000));  // bps
 			}
 
 			// Show the data in monitor
@@ -508,10 +541,10 @@
 
 			function onPointerMove( event ) {
 				if ( event.isPrimary === false ) return;
-				lon += ( event.clientX - pointerX ) * 0.1148;  // In Chrome, turn right then the lon increases.
+				lon += ( event.clientX - pointerX ) * rotateRatio;  // In Chrome, turn right then the lon increases.
 				lon > 360 ? lon = lon - 360 : null;
 				lon < 0 ? lon = lon + 360 : null;
-				lat -= ( event.clientY - pointerY ) * 0.1148;  // In Chrome, turn up then the lat increases.
+				lat -= ( event.clientY - pointerY ) * rotateRatio;  // In Chrome, turn up then the lat increases.
 				lat > 90 ? lat = 90 : null;
 				lat < -90 ? lat = -90 : null;
 				pointerX = event.clientX;
