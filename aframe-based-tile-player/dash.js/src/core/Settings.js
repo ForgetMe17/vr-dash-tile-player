@@ -604,7 +604,9 @@ function Settings() {
             count: null,
             face: null,
             row: null,
-            col: null
+            col: null,
+            duration: null,
+            totalThroughputNeeded: false
         },
         streaming: {
             metricsMaxListDepth: 1000,

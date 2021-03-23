@@ -37,6 +37,7 @@
 			var contents = {};  // Contents from JSON file
 
 			var normalizedTime = 0;  // Set the fastest mediaplayer's timeline as the normalized time
+			var TotalThroughput = 0;  // Data from monitor
 			var playerBufferLength = {};  // Data from monitor
 			var playerAverageThroughput = {};  // Data from monitor
 			var playerTime = {};  // Data from monitor
@@ -44,6 +45,7 @@
 			var playerFOVScore = {}  // Data from monitor
 			var playerContentScore = {}  // Data from monitor
 			
+			var requestList = []; // Data from all HTTPRequests
 			var ssresults = {};  // Data from contents analytics CSV files
 		</script>
 
@@ -189,7 +191,8 @@
 									'face': i,
 									'row': j,
 									'col': k,
-									'duration': contents.duration
+									'duration': contents.duration,
+									'totalThroughputNeeded': true
 								},
 								'streaming': {
 									'abr': {
@@ -198,6 +201,7 @@
 									'bufferToKeep': 6,
 									'stableBufferTime': 6,
 									'bufferTimeAtTopQuality': 10,
+									'fastswitchenabled': true,
 									'liveDelay': 0, 
 									'liveCatchup': {
 									 	'enabled': true
@@ -276,23 +280,14 @@
 					// Initializing
 					players[count].initialize(audio, url, false);
 					playerBufferLength[count] = players[count].getBufferLength();;
-					playerAverageThroughput[count] = players[count].getAverageThroughput("video");  //////////////////////////
+					playerAverageThroughput[count] = players[count].getAverageThroughput("audio");
 					playerTime[count] = players[count].time();
-					playerQuality[count] = players[count].getQualityFor("video");  //////////////////////////
+					playerQuality[count] = players[count].getQualityFor("audio");
 				}
 				// Set the fastest mediaplayer's timeline as the normalized time
-				setInterval(function () {
-					normalizedTime = players[0].time();
-					for (let i = 0; i < contents.face; i++) {
-						for (let j = 0; j < contents.row; j++) {
-							for (let k = 0; k < contents.col; k++) {
-								if (players[i * contents.row * contents.col + j * contents.col + k].time() > normalizedTime) {
-									normalizedTime = players[i * contents.row * contents.col + j * contents.col + k].time();
-								}
-							}
-						}
-					}
-				}, 10);
+				setInterval(setNormalizedTime, 10);
+				// Compute total throughput according to recent HTTP requests
+				setInterval(computeTotalThroughput, 1000);
 				// Show the data in monitor (function below)
 				setInterval(updateStats, 100);
 				// Capture the pictures from mediaplayers
@@ -311,16 +306,54 @@
 				document.getElementById('Pause').style = "display: inline;";
 			}
 			
+			// Set the fastest mediaplayer's timeline as the normalized time
+			function setNormalizedTime() {
+				normalizedTime = players[0].time();
+				for (let i = 0; i < contents.face; i++) {
+					for (let j = 0; j < contents.row; j++) {
+						for (let k = 0; k < contents.col; k++) {
+							if (players[i * contents.row * contents.col + j * contents.col + k].time() > normalizedTime) {
+								normalizedTime = players[i * contents.row * contents.col + j * contents.col + k].time();
+							}
+						}
+					}
+				}
+			}
+
+			// Compute total throughput according to recent HTTP requests (Total data in ONE second)
+			function computeTotalThroughput() {
+				// Get current time
+				const curTime = new Date().getTime();
+				let TotalDataInAnInterval = 0;
+				let requestListLength = requestList.length;
+				let requestListIndex = requestListLength - 1;
+				while (requestListLength > 0 && requestListIndex >= 0 && requestList[requestListIndex]._tfinish.getTime() > curTime - 1000) {
+					let requestDownloadBytes = requestList[requestListIndex].trace.reduce((a, b) => a + b.b[0], 0);
+					let requestFinishTime = requestList[requestListIndex]._tfinish.getTime();
+					let requestResponseTime  = requestList[requestListIndex].tresponse.getTime();
+					if (requestResponseTime > curTime - 1000) {
+						TotalDataInAnInterval += requestDownloadBytes;
+					} else {
+						TotalDataInAnInterval += ( requestDownloadBytes * ( ( requestFinishTime - (curTime - 1000) ) / ( requestFinishTime - requestResponseTime ) ) );
+					}
+					requestListIndex--;
+				}
+				TotalThroughput = Math.round((8 * TotalDataInAnInterval));  // bps
+			}
+
 			// Show the data in monitor
 			function updateStats() {
 				document.querySelector("#stats").innerHTML = "---STATS MONITOR---<br><br><br>";
 				document.querySelector("#stats").innerHTML += "Normalized time: ";
 				document.querySelector("#stats").innerHTML += normalizedTime.toFixed(2);
-				document.querySelector("#stats").innerHTML += " s<br><br>";
+				document.querySelector("#stats").innerHTML += " s<br>";
+				document.querySelector("#stats").innerHTML += "Total Throughput: ";
+				document.querySelector("#stats").innerHTML += TotalThroughput >= 8000000 ? (TotalThroughput / 8000000).toFixed(2) : (TotalThroughput / 8000).toFixed(0);  // MB/s or kB/s
+				document.querySelector("#stats").innerHTML += TotalThroughput >= 8000000 ? " MB/s<br><br>" : " kB/s<br><br>";
 				for (let i = 0; i < contents.face; i++) {
 					for (let j = 0; j < contents.row; j++) {
 						for (let k = 0; k < contents.col; k++) {
-							playerBufferLength[i * contents.row * contents.col + j * contents.col + k] = players[i * contents.row * contents.col + j * contents.col + k].getBufferLength();;
+							playerBufferLength[i * contents.row * contents.col + j * contents.col + k] = players[i * contents.row * contents.col + j * contents.col + k].getBufferLength();
 							playerAverageThroughput[i * contents.row * contents.col + j * contents.col + k] = players[i * contents.row * contents.col + j * contents.col + k].getAverageThroughput("video");
 							playerTime[i * contents.row * contents.col + j * contents.col + k] = players[i * contents.row * contents.col + j * contents.col + k].time();
 							playerQuality[i * contents.row * contents.col + j * contents.col + k] = players[i * contents.row * contents.col + j * contents.col + k].getQualityFor("video");
@@ -335,13 +368,13 @@
 							document.querySelector("#stats").innerHTML += playerTime[i * contents.row * contents.col + j * contents.col + k].toFixed(2);
 							document.querySelector("#stats").innerHTML += " s<br>";
 							document.querySelector("#stats").innerHTML += "Quality ";
-							document.querySelector("#stats").innerHTML += playerQuality[i * contents.row * contents.col + j * contents.col + k];
+							document.querySelector("#stats").innerHTML += playerQuality[i * contents.row * contents.col + j * contents.col + k].toFixed(0);
 							document.querySelector("#stats").innerHTML += "<br>";
 							document.querySelector("#stats").innerHTML += "FOV Score ";
-							document.querySelector("#stats").innerHTML += playerFOVScore[i * contents.row * contents.col + j * contents.col + k];
+							document.querySelector("#stats").innerHTML += playerFOVScore[i * contents.row * contents.col + j * contents.col + k].toFixed(0);
 							document.querySelector("#stats").innerHTML += "<br>";
 							document.querySelector("#stats").innerHTML += "Content Score ";
-							document.querySelector("#stats").innerHTML += playerContentScore[i * contents.row * contents.col + j * contents.col + k];
+							document.querySelector("#stats").innerHTML += playerContentScore[i * contents.row * contents.col + j * contents.col + k].toFixed(0);
 							document.querySelector("#stats").innerHTML += "<br>";
 							document.querySelector("#stats").innerHTML += "Total time: ";
 							document.querySelector("#stats").innerHTML += (playerBufferLength[i * contents.row * contents.col + j * contents.col + k] + playerTime[i * contents.row * contents.col + j * contents.col + k]).toFixed(2);
@@ -365,7 +398,7 @@
 					document.querySelector("#stats").innerHTML += playerTime[contents.face * contents.row * contents.col].toFixed(2);
 					document.querySelector("#stats").innerHTML += " s<br>";
 					document.querySelector("#stats").innerHTML += "Quality ";
-					document.querySelector("#stats").innerHTML += playerQuality[contents.face * contents.row * contents.col];
+					document.querySelector("#stats").innerHTML += playerQuality[contents.face * contents.row * contents.col].toFixed(0);
 					document.querySelector("#stats").innerHTML += "<br>";
 					document.querySelector("#stats").innerHTML += "Total time: ";
 					document.querySelector("#stats").innerHTML += (playerBufferLength[contents.face * contents.row * contents.col] + playerTime[contents.face * contents.row * contents.col]).toFixed(2);
@@ -394,12 +427,19 @@
 				switch (selectedRule) {
 					case "VOD":
 						document.getElementById("json").value = "http://localhost/CMPVP907/aframeVP907.json";
+						document.getElementById("url").value = "";
 						break;
 					case "LIVE":
 						document.getElementById("json").value = "http://222.20.77.111/dash/default.json";
+						document.getElementById("url").value = "";
+						break;
+					case "BUNNY":
+						document.getElementById("json").value = "";
+						document.getElementById("url").value = "https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd";
 						break;
 					default:
 						document.getElementById("json").value = "";
+						document.getElementById("url").value = "";
 						break;
 				}
 			}
@@ -428,13 +468,14 @@
 		
 		<div style="z-index: 999; color: #000000; height: 250px;">
 			<br>JSON(Empty then use the URLs below):<br>
-			<textarea id="json" rows="1" cols="100">http://localhost/CMPVP907/aframeVP907.json</textarea>			
+			<textarea id="json" rows="1" cols="100">http://222.20.77.111/processed/CMPVP907/aframeVP907.json</textarea>			
 			<br>URL(Used when JSON is empty):<br>
 			<textarea id="url" rows="6" cols="100"></textarea>
 			<br>
 			<select id="type" onchange="VOD_LIVE();">
 				<option value ="VOD">VOD</option>
 				<option value ="LIVE">LIVE</option>
+				<option value ="BUNNY">BUNNY</option>
 			</select>
 			<select id="rule">
 				<option value ="FOVRule">FOVRule</option>

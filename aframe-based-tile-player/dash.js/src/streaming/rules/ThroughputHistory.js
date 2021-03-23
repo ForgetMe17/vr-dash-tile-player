@@ -40,6 +40,7 @@ function ThroughputHistory(config) {
     config = config || {};
     // sliding window constants
     const MAX_MEASUREMENTS_TO_KEEP = 20;
+    const AVERAGE_THROUGHPUT_SAMPLE_AMOUNT_TOTALTHROUGHPUTNEEDED = 1;
     const AVERAGE_THROUGHPUT_SAMPLE_AMOUNT_LIVE = 3;
     const AVERAGE_THROUGHPUT_SAMPLE_AMOUNT_VOD = 4;
     const AVERAGE_LATENCY_SAMPLE_AMOUNT = 4;
@@ -80,6 +81,10 @@ function ThroughputHistory(config) {
     function push(mediaType, httpRequest, useDeadTimeLatency) {
         if (!httpRequest.trace || !httpRequest.trace.length) {
             return;
+        }
+
+        if (settings.get().info.totalThroughputNeeded && window.requestList) {
+            window.requestList.push(httpRequest);
         }
 
         const latencyTimeInMilliseconds = (httpRequest.tresponse.getTime() - httpRequest.trequest.getTime()) || 1;
@@ -146,7 +151,7 @@ function ThroughputHistory(config) {
 
         if (isThroughput) {
             arr = throughputDict[mediaType];
-            sampleSize = isLive ? AVERAGE_THROUGHPUT_SAMPLE_AMOUNT_LIVE : AVERAGE_THROUGHPUT_SAMPLE_AMOUNT_VOD;
+            sampleSize = settings.get().info.totalThroughputNeeded ? AVERAGE_THROUGHPUT_SAMPLE_AMOUNT_TOTALTHROUGHPUTNEEDED : isLive ? AVERAGE_THROUGHPUT_SAMPLE_AMOUNT_LIVE : AVERAGE_THROUGHPUT_SAMPLE_AMOUNT_VOD;
         } else {
             arr = latencyDict[mediaType];
             sampleSize = AVERAGE_LATENCY_SAMPLE_AMOUNT;

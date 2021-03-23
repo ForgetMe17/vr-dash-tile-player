@@ -35,11 +35,25 @@ function FOVContentRuleClass() {
         }
 
         var info = abrController.getSettings().info;
+        var streaming = abrController.getSettings().streaming;
         // Compute the bitrate according to FOV
         var priorite_FOV = computeFOVQualities(info);  // From 0 to 100
         // Compute the bitrate according to Content
         var priorite_Content = computeContentQualities(info);  // From 0 to 100
-        var priorite_FOVContent = FOV_weight * priorite_FOV + content_weight * priorite_Content;
+        // Balance the weights according to buffer level
+        if (playerBufferLength[info.count] >= streaming.bufferToKeep - info.duration) {
+            FOV_weight = 0.5;
+            content_weight = 0.7;
+        } else if (playerBufferLength[info.count] <= info.duration) {
+            FOV_weight = 0.8;
+            content_weight = 0.2;
+        } else {
+            FOV_weight = 0.5;
+            content_weight = 0.5;
+        }
+        console.log([FOV_weight, " ", content_weight]);
+        // Compute the bitrate according to FOV and Content
+        var priorite_FOVContent = Math.min(FOV_weight * priorite_FOV + content_weight * priorite_Content, 100);
         playerFOVScore[info.count] = priorite_FOV;
         playerContentScore[info.count] = priorite_Content;
 

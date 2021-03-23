@@ -16657,7 +16657,9 @@ function Settings() {
             count: null,
             face: null,
             row: null,
-            col: null
+            col: null,
+            duration: null,
+            totalThroughputNeeded: false
         },
         streaming: {
             metricsMaxListDepth: 1000,
@@ -44936,6 +44938,7 @@ function ThroughputHistory(config) {
     config = config || {};
     // sliding window constants
     var MAX_MEASUREMENTS_TO_KEEP = 20;
+    var AVERAGE_THROUGHPUT_SAMPLE_AMOUNT_TOTALTHROUGHPUTNEEDED = 1;
     var AVERAGE_THROUGHPUT_SAMPLE_AMOUNT_LIVE = 3;
     var AVERAGE_THROUGHPUT_SAMPLE_AMOUNT_VOD = 4;
     var AVERAGE_LATENCY_SAMPLE_AMOUNT = 4;
@@ -44976,6 +44979,10 @@ function ThroughputHistory(config) {
     function push(mediaType, httpRequest, useDeadTimeLatency) {
         if (!httpRequest.trace || !httpRequest.trace.length) {
             return;
+        }
+
+        if (settings.get().info.totalThroughputNeeded && window.requestList) {
+            window.requestList.push(httpRequest);
         }
 
         var latencyTimeInMilliseconds = httpRequest.tresponse.getTime() - httpRequest.trequest.getTime() || 1;
@@ -45047,7 +45054,7 @@ function ThroughputHistory(config) {
 
         if (isThroughput) {
             arr = throughputDict[mediaType];
-            sampleSize = isLive ? AVERAGE_THROUGHPUT_SAMPLE_AMOUNT_LIVE : AVERAGE_THROUGHPUT_SAMPLE_AMOUNT_VOD;
+            sampleSize = settings.get().info.totalThroughputNeeded ? AVERAGE_THROUGHPUT_SAMPLE_AMOUNT_TOTALTHROUGHPUTNEEDED : isLive ? AVERAGE_THROUGHPUT_SAMPLE_AMOUNT_LIVE : AVERAGE_THROUGHPUT_SAMPLE_AMOUNT_VOD;
         } else {
             arr = latencyDict[mediaType];
             sampleSize = AVERAGE_LATENCY_SAMPLE_AMOUNT;

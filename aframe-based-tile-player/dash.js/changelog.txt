@@ -12,12 +12,17 @@ Modifications {
             count: null,
             face: null,
             row: null,
-            col: null
+            col: null,
+            duration: null,
+            totalThroughputNeeded: false
         } 
     };
     Add: [AbrController.js] AbrController.getSettings();
     Add: [BufferController.js] BufferController.triggerEvent(...) { payload.info = settings.get().info; };
+    Add: [ThroughputHistory.js] const AVERAGE_THROUGHPUT_SAMPLE_AMOUNT_TOTALTHROUGHPUTNEEDED = 1;
+    Add: [ThroughputHistory.js] ThroughputHistory.push(...) { ... if (settings.get().info.totalThroughputNeeded && window.requestList) { requestList.push(httpRequest); } ... };
 
-    Change: [PlaybackController.js] PlaybackController.onPlaybackProgression() { if ( //!isDynamic && ...)...};  // Consider the situation whatever isDynamic is
+    Change: [PlaybackController.js] PlaybackController.onPlaybackProgression() { if ( //!isDynamic && ... ) ... };  // Consider the situation whatever isDynamic is
     Change: [PlaybackController.js] PlaybackController.getCurrentLiveLatency() { ... };  // Change totally with compatibility for non-isDynamic
+    Change: [ThroughputHistory.js] ThroughputHistory.getSampleSize(...) { ... if (isThroughput) { sampleSize = settings.get().info.totalThroughputNeeded ? AVERAGE_THROUGHPUT_SAMPLE_AMOUNT_TOTALTHROUGHPUTNEEDED : isLive ? AVERAGE_THROUGHPUT_SAMPLE_AMOUNT_LIVE : AVERAGE_THROUGHPUT_SAMPLE_AMOUNT_VOD; } ... };
 }
