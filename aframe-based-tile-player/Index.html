@@ -31,32 +31,47 @@
 		<script>
 			//// Global variables for storage
 			var players = [];  // Container for players, which is easy for us to operate in them.
+			var playerCount = 0;
 			var buffer_empty_flag = [];  // Flags for players, showing whether the player is frozen or not.
 			var lon = 90, lat = 0;  // Longitude and latitude in spherical coordinates.
 			var pointerX, pointerY;  // Position of mouse click
 			var contents = {};  // Contents from JSON file
+			var startupTime = new Date().getTime();  // Initialize the startup time
+			var totalQOE = 0;  // Compute the QoE considering all playing tiles
+			var viewerQOE = 0;  // Compute the QoE considering the tiles in FOV
+			var contentQOE = 0;  // Compute the QoE considering the tiles in FOV with contents as well
 
 			var normalizedTime = 0;  // Set the fastest mediaplayer's timeline as the normalized time
-			var TotalThroughput = 0;  // Data from monitor
+			var totalThroughput = 0;  // Data from monitor
 			var playerBufferLength = [];  // Data from monitor
 			var playerAverageThroughput = [];  // Data from monitor
 			var playerTime = [];  // Data from monitor
 			var playerQuality = [];  // Data from monitor
 			var playerFOVScore = [];  // Data from monitor
 			var playerContentScore = [];  // Data from monitor
-			
-			var requestList = []; // Data from all HTTPRequests
+			var playerPastQuality = [];  // Data from monitor's playerQuality
+
+			var playerBitrateList = [];  // Data from bitrate list
+			var requestList = [];  // Data from all HTTPRequests
 			var ssresults = {};  // Data from contents analytics CSV files
 
 			//// Global variables (flexible)
 			const captureWidth = 128;  // [For capturing each frame] Set the width of the capture pictures
 			const captureHeight = 128;  // [For capturing each frame] Set the height of the capture pictures
-			const requestDuration = 1000;  // [For computing total throughput] Set the duration we consider
-			const requestLayBack = 1000;  // [For computing total throughput] Set the lay-back time for avoiding the on-going requests
+			const requestDuration = 3000;  // [For computing total throughput] Set the duration we consider (ms)
+			const requestLayBack = 0;  // [For computing total throughput] Set the lay-back time for avoiding the on-going requests (ms)
 			const rotateRatio = 0.1148;  // [For focusing FOV] Set the ratio of rotating when switching the angle of view
 			const playerBufferToKeep = 6;  // [For initializing mediaplayers] Allows you to modify the buffer that is kept in source buffer in seconds
 			const playerStableBufferTime = 6;  // [For initializing mediaplayers] The time that the internal buffer target will be set to post startup/seeks (NOT top quality)
 			const playerBufferTimeAtTopQuality = 10;  // [For initializing mediaplayers] The time that the internal buffer target will be set to once playing the top quality
+			const playerMinDrift = 0.02;  // [For initializing mediaplayers] The minimum latency deviation allowed
+			const lambdaQOE = 1.0;  // [For computing QoE] Value of the quality switches constant
+			const miuQOE = 4.3;  // [For computing QoE] Stall weight
+			const omegaQOE = 4.3;  // [For computing QoE] Content weight
+			const qQOE = 'log';  // [For computing QoE] a mapping function that translates the bitrate of chunk to the quality perceived by the user (Linear || Log)
+			const a1QOE = 0.7;  // [For computing QoE] Influence of the quality of Zone 1
+			const a2QOE = 0.3;  // [For computing QoE] Influence of the quality of Zone 2
+			const a3QOE = 0.0;  // [For computing QoE] Influence of the quality of Zone 3
 		</script>
 
 		<script>
@@ -72,6 +87,7 @@
 			function openJSON(url) {
 				players = [];
 				buffer_empty_flag = [];
+				playerCount = 0;
 				lon = 90;
 				lat = 0;
 				contents = {};
@@ -114,36 +130,24 @@
 			//// Building mediaplayers
 			// Pause in all the players
 			function pause_all() {
-				let count = 0;
-				for (let i = 0; i < contents.face; i++) {
-					for (let j = 0; j < contents.row; j++) {
-						for (let k = 0; k < contents.col; k++) {
-							players[count].pause();
-							count++;
-							console.log("Player_" + i + "_" + j + "_" + k + " pauses.");
-						}
-					}
+				for (let i = 0; i < playerCount; i++) {
+					players[i].pause();
+					console.log("Player_" + i + " pauses.");
 				}
 				if (contents.audio && contents.audio != "") {
-					players[count].pause();
+					players[playerCount].pause();
 					console.log("Audio pauses.");
 				}
 			}
 
 			// Play in all the players
 			function play_all() {
-				let count = 0;
-				for (let i = 0; i < contents.face; i++) {
-					for (let j = 0; j < contents.row; j++) {
-						for (let k = 0; k < contents.col; k++) {
-							players[count].play();
-							count++;
-							console.log("Player_" + i + "_" + j + "_" + k + " plays.");
-						}
-					}
+				for (let i = 0; i < playerCount; i++) {
+					players[i].play();
+					console.log("Player_" + i + " plays.");
 				}
 				if (contents.audio && contents.audio != "") {
-					players[count].play();
+					players[playerCount].play();
 					console.log("Audio plays.");
 				}
 			}
@@ -158,50 +162,43 @@
 			function buffer_loaded_event(e) {
 				if (buffer_empty_flag[e.count] == true) {
 					buffer_empty_flag[e.count] = false;
-
-					let count = 0;
-					for (let i = 0; i < contents.face; i++) {
-						for (let j = 0; j < contents.row; j++) {
-							for (let k = 0; k < contents.col; k++) {
-								if (buffer_empty_flag[count] == true) {
-									return;
-								}
-								count++;
-							}
+					for (let i = 0; i < playerCount; i++) {
+						if (buffer_empty_flag[i] == true) {
+							return;
 						}
 					}
-					if (contents.audio && contents.audio != "") {
-						if (buffer_empty_flag[count] == false) {
-							play_all();
-						}
-					} else {
-						play_all();
+					if (contents.audio && contents.audio != "" && buffer_empty_flag[playerCount] == true) {
+						return;
 					}
+					play_all();
 				}
 			}
 
 			// Initialize when loading the videos
             function initial() {
 				let video, url;
-				let count = 0;
 				// Video part
                 for (let i = 0; i < contents.face; i++) {
 					for (let j = 0; j < contents.row; j++) {
 						for (let k = 0; k < contents.col; k++) {
-							video = document.getElementById( "frame" ).contentWindow.document.querySelector("#" + "video_" + i + "_" + j + "_" + k);
-							players[count] = new dashjs.MediaPlayer().create();
+							video = document.getElementById( "frame" ).contentWindow.document.querySelector("#" + "video_" + [i * contents.row * contents.col + j * contents.col + k]);
+							players[playerCount] = new dashjs.MediaPlayer().create();
 							url = contents.baseUrl + contents.tiles[i][j][k].src;
-							buffer_empty_flag[count] = true;
+							buffer_empty_flag[playerCount] = true;
 
 							// Don't use dash.js default rules
-							players[count].updateSettings({
+							players[playerCount].updateSettings({
 								'info': {
-									'id': "video_" + i + "_" + j + "_" + k,
-									'count': count,
+									'id': "video_" + [i * contents.row * contents.col + j * contents.col + k],
+									'count': playerCount,
 									'face': i,
 									'row': j,
 									'col': k,
 									'duration': contents.duration,
+									'width': contents.tiles[i][j][k].width,
+									'height': contents.tiles[i][j][k].height,
+									'location': {'x': contents.tiles[i][j][k].x, 'y': contents.tiles[i][j][k].y, 'z': contents.tiles[i][j][k].z},
+									'rotation': {'rx': contents.tiles[i][j][k].rx, 'ry': contents.tiles[i][j][k].ry, 'rz': contents.tiles[i][j][k].rz},
 									'totalThroughputNeeded': true
 								},
 								'streaming': {
@@ -214,7 +211,8 @@
 									'fastswitchenabled': true,
 									'liveDelay': 0, 
 									'liveCatchup': {
-									 	'enabled': true
+									 	'enabled': true,
+										 'minDrift': playerMinDrift
 									}
 								}
 							});
@@ -223,19 +221,19 @@
 							let selectedRule = document.getElementById("rule").options[index].text;
 							switch (selectedRule) {
 								case "FOVRule":
-									players[count].addABRCustomRule('qualitySwitchRules', 'FOVRule', FOVRule);
+									players[playerCount].addABRCustomRule('qualitySwitchRules', 'FOVRule', FOVRule);
 									break;
 								// case "ThroughputRule":
-								// 	players[count].addABRCustomRule('qualitySwitchRules', 'MyThroughputRule', MyThroughputRule);
+								// 	players[playerCount].addABRCustomRule('qualitySwitchRules', 'MyThroughputRule', MyThroughputRule);
 								// 	break;
 								case "HighestBitrateRule":
-									players[count].addABRCustomRule('qualitySwitchRules', 'HighestBitrateRule', HighestBitrateRule);
+									players[playerCount].addABRCustomRule('qualitySwitchRules', 'HighestBitrateRule', HighestBitrateRule);
 									break;
 								case "FOVContentRule":
-									players[count].addABRCustomRule('qualitySwitchRules', 'FOVContentRule', FOVContentRule);
+									players[playerCount].addABRCustomRule('qualitySwitchRules', 'FOVContentRule', FOVContentRule);
 									break;									
 								default:
-									players[count].updateSettings({
+									players[playerCount].updateSettings({
 										'streaming': {
 											'abr': {
 												'useDefaultABRRules': true
@@ -246,74 +244,71 @@
 							}
 
 							// Turn on the event listeners and add actions for triggers 
-							// players[count].on(dashjs.MediaPlayer.events["BUFFER_EMPTY"],buffer_empty_event);
-							// players[count].on(dashjs.MediaPlayer.events["BUFFER_LOADED"],buffer_loaded_event);
+							// players[playerCount].on(dashjs.MediaPlayer.events["BUFFER_EMPTY"],buffer_empty_event);
+							// players[playerCount].on(dashjs.MediaPlayer.events["BUFFER_LOADED"],buffer_loaded_event);
 
 							// Initializing
-							players[count].initialize(video, url, false);
-							playerBufferLength[count] = players[count].getBufferLength();;
-							playerAverageThroughput[count] = players[count].getAverageThroughput("video");
-							playerTime[count] = players[count].time();
-							playerQuality[count] = players[count].getQualityFor("video");
-							playerFOVScore[count] = 0;
-							playerContentScore[count] = 0;
+							players[playerCount].initialize(video, url, false);
+							playerBufferLength[playerCount] = players[playerCount].getBufferLength();
+							playerAverageThroughput[playerCount] = players[playerCount].getAverageThroughput("video");
+							playerTime[playerCount] = players[playerCount].time();
+							playerQuality[playerCount] = players[playerCount].getQualityFor("video");
+							playerFOVScore[playerCount] = 0;
+							playerContentScore[playerCount] = 0;
+							playerBitrateList[playerCount] = [];
 
-							count++;
+							playerCount++;
 						}
 					}
 				}
 				// Audio part
 				if (contents.audio && contents.audio != "") {
 					var audio = document.getElementById( "frame" ).contentWindow.document.querySelector("#audio");
-					players[count] = new dashjs.MediaPlayer().create();
+					players[playerCount] = new dashjs.MediaPlayer().create();
 					url = contents.baseUrl + contents.audio;
-					buffer_empty_flag[count] = true;
+					buffer_empty_flag[playerCount] = true;
 
-					players[count].updateSettings({
+					players[playerCount].updateSettings({
 						'info': {
 							'id': "audio",
-							'count': count,
+							'count': playerCount,
+							'duration': contents.duration
 						}
 					});
 
 					// Turn on the event listeners and add actions for triggers 
-					players[count].on(dashjs.MediaPlayer.events["BUFFER_EMPTY"], buffer_empty_event);
-					players[count].on(dashjs.MediaPlayer.events["BUFFER_LOADED"], buffer_loaded_event);
+					players[playerCount].on(dashjs.MediaPlayer.events["BUFFER_EMPTY"], buffer_empty_event);
+					players[playerCount].on(dashjs.MediaPlayer.events["BUFFER_LOADED"], buffer_loaded_event);
 
 					// Initializing
-					players[count].initialize(audio, url, false);
-					playerBufferLength[count] = players[count].getBufferLength();;
-					playerAverageThroughput[count] = players[count].getAverageThroughput("audio");
-					playerTime[count] = players[count].time();
-					playerQuality[count] = players[count].getQualityFor("audio");
+					players[playerCount].initialize(audio, url, false);
+					playerBufferLength[playerCount] = players[playerCount].getBufferLength();;
+					playerAverageThroughput[playerCount] = players[playerCount].getAverageThroughput("audio");
+					playerTime[playerCount] = players[playerCount].time();
+					playerQuality[playerCount] = players[playerCount].getQualityFor("audio");
 				}
 				// Get video captures
-				for (let i = 0; i < contents.face; i++) {
-					for (let j = 0; j < contents.row; j++) {
-						for (let k = 0; k < contents.col; k++) {
-							let canvas = document.createElement( "canvas" );
-							canvas.id = "capture_" + i + "_" + j + "_" + k;
-							canvas.width = captureWidth;
-    						canvas.height = captureHeight;
-							document.getElementById("captures").appendChild(canvas);
-						}
-					}
+				for (let i = 0; i < playerCount; i++) {
+					let canvas = document.createElement( "canvas" );
+					canvas.id = "capture_" + i;
+					canvas.width = captureWidth;
+					canvas.height = captureHeight;
+					document.getElementById("captures").appendChild(canvas);
 				}
+				startupTime = new Date().getTime();
 				// Set the fastest mediaplayer's timeline as the normalized time
 				setInterval(setNormalizedTime, 10);
 				// Compute total throughput according to recent HTTP requests
-				setInterval(computeTotalThroughput, 1000);
+				setInterval(computetotalThroughput, 1000);
+				// Compute QoE
+				setInterval(computeQoE, 1000);
 				// Show the data in monitor (function below)
 				setInterval(updateStats, 100);
 				// Capture the pictures from mediaplayers
 				setInterval(function () {
-					for (let i = 0; i < contents.face; i++) {
-						for (let j = 0; j < contents.row; j++) {
-							for (let k = 0; k < contents.col; k++) {
-								document.getElementById("capture_" + i + "_" + j + "_" + k).getContext('2d').drawImage(document.getElementById( "frame" ).contentWindow.document.querySelector("#" + "video_" + i + "_" + j + "_" + k), 0, 0, captureWidth, captureHeight);
-								// img.src = canvas.toDataURL("image/png");
-							}
-						}
+					for (let i = 0; i < playerCount; i++) {
+						document.getElementById("capture_" + i).getContext('2d').drawImage(document.getElementById( "frame" ).contentWindow.document.querySelector("#" + "video_" + i), 0, 0, captureWidth, captureHeight);
+						// img.src = canvas.toDataURL("image/png");
 					}
 				}, 500);
 				document.getElementById('Load').style = "display: none;";
@@ -324,19 +319,20 @@
 			// Set the fastest mediaplayer's timeline as the normalized time
 			function setNormalizedTime() {
 				normalizedTime = players[0].time();
-				for (let i = 0; i < contents.face; i++) {
-					for (let j = 0; j < contents.row; j++) {
-						for (let k = 0; k < contents.col; k++) {
-							if (players[i * contents.row * contents.col + j * contents.col + k].time() > normalizedTime) {
-								normalizedTime = players[i * contents.row * contents.col + j * contents.col + k].time();
-							}
-						}
+				for (let i = 0; i < playerCount; i++) {
+					if (players[i].time() > normalizedTime) {
+						normalizedTime = players[i].time();
+					}
+				}
+				if (contents.audio && contents.audio != "") {
+					if (players[playerCount].time() > normalizedTime) {
+						normalizedTime = players[playerCount].time();
 					}
 				}
 			}
 
 			// Compute total throughput according to recent HTTP requests (Total data in ONE second)
-			function computeTotalThroughput() {
+			function computetotalThroughput() {
 				const precurTime = new Date().getTime();  // Get current time
 				const curTime = precurTime - requestLayBack;
 				let TotalDataInAnInterval = 0;  // Byte
@@ -371,7 +367,62 @@
 					}
 					requestListIndex--;
 				}
-				TotalThroughput = Math.round((8 * TotalDataInAnInterval) / (TotalTimeInAnInterval / 1000));  // bps
+				if (curTime - requestDuration < requestTimeIndex) {
+					TotalTimeInAnInterval -= (requestTimeIndex - (curTime - requestDuration));
+				}
+				if (TotalTimeInAnInterval == 0) {
+					TotalTimeInAnInterval = 1;
+				}
+				totalThroughput = Math.round((8 * TotalDataInAnInterval) / (TotalTimeInAnInterval / 1000));  // bps
+			}
+
+			// Compute QoE
+			function computeQoE() {
+				if (playerPastQuality.length == 0 || playerQuality.length == 0) {
+					totalQOE = NaN;
+					viewerQOE = NaN;
+					contentQOE = NaN;
+					playerPastQuality = playerQuality;
+					return;
+				}
+				let pretotalQOE = 0;  // = Quality - miu * Stalls - lambda * Quality switches
+				let previewerQOE = 0;  // = [a1 a2 a3] * (Quality - miu * Stalls - lambda * Quality switches)
+				let precontentQOE = 0;  // = [a1 a2 a3] * (Quality - miu * Stalls - lambda * Quality switches + omega * Content score)
+				for (let i = 0; i < playerCount; i++) {
+					////////////////////////////////// Regardless of stall, only totalQOE //////////////////////////////////
+					let playerSettings = players[i].getSettings().info;
+					// Compute divation between angle of view and location of tile
+					let r = Math.sqrt(playerSettings.location.x * playerSettings.location.x + playerSettings.location.y * playerSettings.location.y + playerSettings.location.z * playerSettings.location.z);
+					let tile_theta = Math.acos(playerSettings.location.y / (r == 0 ? 1 : r));
+					let tile_phi = Math.atan(playerSettings.location.x / (playerSettings.location.z == 0 ? 1 : playerSettings.location.z));
+					let view_theta = (90 - lat) * (Math.PI / 180);
+					let view_phi = (270 - lon >= 0 ? 270 - lon : 270 - lon + 360) * (Math.PI / 180);
+					let tile_z = Math.sin(tile_theta) * Math.cos(tile_phi);
+					tile_z = playerSettings.location.z < 0 ? tile_z < 0 ? tile_z : -tile_z : tile_z;
+					let tile_x = Math.sin(tile_theta) * Math.sin(tile_phi);
+					let tile_y = Math.cos(tile_theta);
+					let view_z = Math.sin(view_theta) * Math.cos(view_phi);
+					let view_x = Math.sin(view_theta) * Math.sin(view_phi);
+					let view_y = Math.cos(view_theta);
+					let divation = Math.acos((tile_z * view_z + tile_x * view_x + tile_y * view_y) / (Math.sqrt(tile_z * tile_z + tile_x * tile_x + tile_y * tile_y) * Math.sqrt(view_z * view_z + view_x * view_x + view_y * view_y))) * (180 / Math.PI);
+					console.log([i, playerSettings, r, tile_theta, tile_phi, view_theta, view_phi, tile_z, tile_x, tile_y, view_z, view_x, view_y, divation]);
+					switch (qQOE) {
+						case 'linear':
+							pretotalQOE = pretotalQOE + playerBitrateList[i][playerQuality[i]].bitrate - lambdaQOE * Math.abs(playerBitrateList[i][playerQuality[i]].bitrate - playerBitrateList[i][playerPastQuality[i]].bitrate);
+							previewerQOE = previewerQOE + (divation < 61 ? a1QOE : divation < 121 ? a2QOE : a3QOE) * (playerBitrateList[i][playerQuality[i]].bitrate - lambdaQOE * Math.abs(playerBitrateList[i][playerQuality[i]].bitrate - playerBitrateList[i][playerPastQuality[i]].bitrate));
+							break;
+						case 'log':
+							pretotalQOE = pretotalQOE + Math.log(playerBitrateList[i][playerQuality[i]].bitrate + 1) - lambdaQOE * Math.abs(Math.log(playerBitrateList[i][playerQuality[i]].bitrate + 1) - Math.log(playerBitrateList[i][playerPastQuality[i]].bitrate + 1));
+							previewerQOE = previewerQOE + (divation < 61 ? a1QOE : divation < 121 ? a2QOE : a3QOE) * (Math.log(playerBitrateList[i][playerQuality[i]].bitrate + 1) - lambdaQOE * Math.abs(Math.log(playerBitrateList[i][playerQuality[i]].bitrate + 1) - Math.log(playerBitrateList[i][playerPastQuality[i]].bitrate + 1)));
+							break;
+						default:
+							break;
+					}
+				}
+				totalQOE = pretotalQOE;
+				viewerQOE = previewerQOE;
+				contentQOE = precontentQOE;
+				playerPastQuality = playerQuality;
 			}
 
 			// Show the data in monitor
@@ -381,60 +432,68 @@
 				document.querySelector("#stats").innerHTML += normalizedTime.toFixed(2);
 				document.querySelector("#stats").innerHTML += " s<br>";
 				document.querySelector("#stats").innerHTML += "Total Throughput: ";
-				document.querySelector("#stats").innerHTML += TotalThroughput >= 8000000 ? (TotalThroughput / 8000000).toFixed(2) : (TotalThroughput / 8000).toFixed(0);  // MB/s or kB/s
-				document.querySelector("#stats").innerHTML += TotalThroughput >= 8000000 ? " MB/s<br><br>" : " kB/s<br><br>";
-				for (let i = 0; i < contents.face; i++) {
-					for (let j = 0; j < contents.row; j++) {
-						for (let k = 0; k < contents.col; k++) {
-							playerBufferLength[i * contents.row * contents.col + j * contents.col + k] = players[i * contents.row * contents.col + j * contents.col + k].getBufferLength();
-							playerAverageThroughput[i * contents.row * contents.col + j * contents.col + k] = players[i * contents.row * contents.col + j * contents.col + k].getAverageThroughput("video");
-							playerTime[i * contents.row * contents.col + j * contents.col + k] = players[i * contents.row * contents.col + j * contents.col + k].time();
-							playerQuality[i * contents.row * contents.col + j * contents.col + k] = players[i * contents.row * contents.col + j * contents.col + k].getQualityFor("video");
-							document.querySelector("#stats").innerHTML += ( "Video_" + i + "_" + j + "_" + k + ":<br>" );
-							document.querySelector("#stats").innerHTML += "Buffer level ";
-							document.querySelector("#stats").innerHTML += playerBufferLength[i * contents.row * contents.col + j * contents.col + k].toFixed(2);
-							document.querySelector("#stats").innerHTML += " s<br>";
-							document.querySelector("#stats").innerHTML += "Average Throughput ";
-							document.querySelector("#stats").innerHTML += playerAverageThroughput[i * contents.row * contents.col + j * contents.col + k].toFixed(0);
-							document.querySelector("#stats").innerHTML += " bps<br>";
-							document.querySelector("#stats").innerHTML += "Time ";
-							document.querySelector("#stats").innerHTML += playerTime[i * contents.row * contents.col + j * contents.col + k].toFixed(2);
-							document.querySelector("#stats").innerHTML += " s<br>";
-							document.querySelector("#stats").innerHTML += "Quality ";
-							document.querySelector("#stats").innerHTML += playerQuality[i * contents.row * contents.col + j * contents.col + k].toFixed(0);
-							document.querySelector("#stats").innerHTML += "<br>";
-							document.querySelector("#stats").innerHTML += "FOV Score ";
-							document.querySelector("#stats").innerHTML += playerFOVScore[i * contents.row * contents.col + j * contents.col + k].toFixed(0);
-							document.querySelector("#stats").innerHTML += "<br>";
-							document.querySelector("#stats").innerHTML += "Content Score ";
-							document.querySelector("#stats").innerHTML += playerContentScore[i * contents.row * contents.col + j * contents.col + k].toFixed(0);
-							document.querySelector("#stats").innerHTML += "<br>";
-							document.querySelector("#stats").innerHTML += "Total time: ";
-							document.querySelector("#stats").innerHTML += (playerBufferLength[i * contents.row * contents.col + j * contents.col + k] + playerTime[i * contents.row * contents.col + j * contents.col + k]).toFixed(2);
-							document.querySelector("#stats").innerHTML += " s<br><br>";
-						}
+				document.querySelector("#stats").innerHTML += totalThroughput >= 8000000 ? (totalThroughput / 8000000).toFixed(2) : (totalThroughput / 8000).toFixed(0);  // MB/s or kB/s
+				document.querySelector("#stats").innerHTML += totalThroughput >= 8000000 ? " MB/s<br>" : " kB/s<br>";
+				document.querySelector("#stats").innerHTML += "Total QoE: ";
+				document.querySelector("#stats").innerHTML += totalQOE.toFixed(2);
+				document.querySelector("#stats").innerHTML += "<br>"
+				document.querySelector("#stats").innerHTML += "Viewer's QoE: ";
+				document.querySelector("#stats").innerHTML += viewerQOE.toFixed(2);
+				document.querySelector("#stats").innerHTML += "<br>"
+				document.querySelector("#stats").innerHTML += "Content-based QoE: ";
+				document.querySelector("#stats").innerHTML += contentQOE.toFixed(2);
+				document.querySelector("#stats").innerHTML += "<br><br>"
+				for (let i = 0; i < playerCount; i++) {
+					if (playerBitrateList[i].length == 0) {
+						playerBitrateList[i] = players[i].getBitrateInfoListFor("video");
 					}
-				}
-				if (contents.audio && contents.audio != "") {
-					playerBufferLength[contents.face * contents.row * contents.col] = players[contents.face * contents.row * contents.col].getBufferLength();
-					playerAverageThroughput[contents.face * contents.row * contents.col] = players[contents.face * contents.row * contents.col].getAverageThroughput("audio");
-					playerTime[contents.face * contents.row * contents.col] = players[contents.face * contents.row * contents.col].time();
-					playerQuality[contents.face * contents.row * contents.col] = players[contents.face * contents.row * contents.col].getQualityFor("audio");
-					document.querySelector("#stats").innerHTML += ( "Audio:<br>" );
+					playerBufferLength[i] = players[i].getBufferLength();
+					playerAverageThroughput[i] = players[i].getAverageThroughput("video");
+					playerTime[i] = players[i].time();
+					playerQuality[i] = players[i].getQualityFor("video");
+					document.querySelector("#stats").innerHTML += ( "Video_" + i + ":<br>" );
 					document.querySelector("#stats").innerHTML += "Buffer level ";
-					document.querySelector("#stats").innerHTML += playerBufferLength[contents.face * contents.row * contents.col].toFixed(2);
+					document.querySelector("#stats").innerHTML += playerBufferLength[i].toFixed(2);
 					document.querySelector("#stats").innerHTML += " s<br>";
 					document.querySelector("#stats").innerHTML += "Average Throughput ";
-					document.querySelector("#stats").innerHTML += playerAverageThroughput[contents.face * contents.row * contents.col].toFixed(0);
+					document.querySelector("#stats").innerHTML += playerAverageThroughput[i].toFixed(0);
 					document.querySelector("#stats").innerHTML += " bps<br>";
 					document.querySelector("#stats").innerHTML += "Time ";
-					document.querySelector("#stats").innerHTML += playerTime[contents.face * contents.row * contents.col].toFixed(2);
+					document.querySelector("#stats").innerHTML += playerTime[i].toFixed(2);
 					document.querySelector("#stats").innerHTML += " s<br>";
 					document.querySelector("#stats").innerHTML += "Quality ";
-					document.querySelector("#stats").innerHTML += playerQuality[contents.face * contents.row * contents.col].toFixed(0);
+					document.querySelector("#stats").innerHTML += playerQuality[i].toFixed(0);
+					document.querySelector("#stats").innerHTML += "<br>";
+					document.querySelector("#stats").innerHTML += "FOV Score ";
+					document.querySelector("#stats").innerHTML += playerFOVScore[i].toFixed(0);
+					document.querySelector("#stats").innerHTML += "<br>";
+					document.querySelector("#stats").innerHTML += "Content Score ";
+					document.querySelector("#stats").innerHTML += playerContentScore[i].toFixed(0);
 					document.querySelector("#stats").innerHTML += "<br>";
 					document.querySelector("#stats").innerHTML += "Total time: ";
-					document.querySelector("#stats").innerHTML += (playerBufferLength[contents.face * contents.row * contents.col] + playerTime[contents.face * contents.row * contents.col]).toFixed(2);
+					document.querySelector("#stats").innerHTML += (playerBufferLength[i] + playerTime[i]).toFixed(2);
+					document.querySelector("#stats").innerHTML += " s<br><br>";
+				}
+				if (contents.audio && contents.audio != "") {
+					playerBufferLength[playerCount] = players[playerCount].getBufferLength();
+					playerAverageThroughput[playerCount] = players[playerCount].getAverageThroughput("audio");
+					playerTime[playerCount] = players[playerCount].time();
+					playerQuality[playerCount] = players[playerCount].getQualityFor("audio");
+					document.querySelector("#stats").innerHTML += ( "Audio:<br>" );
+					document.querySelector("#stats").innerHTML += "Buffer level ";
+					document.querySelector("#stats").innerHTML += playerBufferLength[playerCount].toFixed(2);
+					document.querySelector("#stats").innerHTML += " s<br>";
+					document.querySelector("#stats").innerHTML += "Average Throughput ";
+					document.querySelector("#stats").innerHTML += playerAverageThroughput[playerCount].toFixed(0);
+					document.querySelector("#stats").innerHTML += " bps<br>";
+					document.querySelector("#stats").innerHTML += "Time ";
+					document.querySelector("#stats").innerHTML += playerTime[playerCount].toFixed(2);
+					document.querySelector("#stats").innerHTML += " s<br>";
+					document.querySelector("#stats").innerHTML += "Quality ";
+					document.querySelector("#stats").innerHTML += playerQuality[playerCount].toFixed(0);
+					document.querySelector("#stats").innerHTML += "<br>";
+					document.querySelector("#stats").innerHTML += "Total time: ";
+					document.querySelector("#stats").innerHTML += (playerBufferLength[playerCount] + playerTime[playerCount]).toFixed(2);
 					document.querySelector("#stats").innerHTML += " s<br><br>";
 				}
 			}
@@ -458,7 +517,11 @@
 				let index = document.getElementById("type").selectedIndex;
 				let selectedRule = document.getElementById("type").options[index].text;
 				switch (selectedRule) {
-					case "VOD":
+					case "SVOD":
+						document.getElementById("json").value = "http://222.20.77.111/processed/CMPVP907/aframeVP907.json";
+						document.getElementById("url").value = "";
+						break;
+					case "LVOD":
 						document.getElementById("json").value = "http://localhost/CMPVP907/aframeVP907.json";
 						document.getElementById("url").value = "";
 						break;
@@ -506,7 +569,8 @@
 			<textarea id="url" rows="6" cols="100"></textarea>
 			<br>
 			<select id="type" onchange="VOD_LIVE();">
-				<option value ="VOD">VOD</option>
+				<option value ="SVOD">SVOD</option>
+				<option value ="LVOD">LVOD</option>
 				<option value ="LIVE">LIVE</option>
 				<option value ="BUNNY">BUNNY</option>
 			</select>

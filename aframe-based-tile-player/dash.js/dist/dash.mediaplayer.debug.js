@@ -16659,6 +16659,10 @@ function Settings() {
             row: null,
             col: null,
             duration: null,
+            width: null,
+            height: null,
+            location: { 'x': null, 'y': null, 'z': null },
+            rotation: { 'rx': null, 'ry': null, 'rz': null },
             totalThroughputNeeded: false
         },
         streaming: {

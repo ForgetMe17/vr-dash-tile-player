@@ -14,6 +14,10 @@ Modifications {
             row: null,
             col: null,
             duration: null,
+            width: null,
+            height: null,
+            location: null,
+            rotation: null,
             totalThroughputNeeded: false
         } 
     };
