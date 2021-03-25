@@ -1,576 +1,97 @@
 <!DOCTYPE html>
 
-<html lang="en">
+<html ng-app="DashPlayer" lang="en">
 
     <head>
 
 		<meta charset="utf-8"/>
 		<title>(^_^)~ VR PLAYER ~(^_^)</title>
+
+		<script src="app/lib/jquery/jquery-3.1.1.min.js"></script>
+
+		<script src="app/lib/angular/angular.min.js"></script>
+		<script src="app/lib/angular/angular-resource.min.js"></script>
+		<script src="app/lib/angular/angular-flot.js"></script>
+
+		<script src="app/lib/bootstrap/js/bootstrap.min.js"></script>
+
+		<script src="app/lib/flot/jquery.flot.min.js"></script>
+		<script src="app/lib/flot/jquery.flot.resize.min.js"></script>
+		<script src="app/lib/flot/jquery.flot.axislabels.js"></script>
+
+		<script src="app/contrib/cast_sender.js"></script>
+		<script src="app/contrib/akamai/controlbar/ControlBar.js"></script>
 		
 		<script src="./dash.js/dist/dash.all.debug.js"></script>
+		<script src="app/main.js"></script>
+
 		<script src="FOVRule.js" class="code"></script>
 		<script src="MyThroughputRule.js" class="code"></script>
 		<script src="HighestBitrateRule.js" class="code"></script>
 		<script src="FOVContentRule.js" class="code"></script>
 
+		<link rel="stylesheet" href="app/lib/bootstrap/css/bootstrap.min.css">
+		<!-- <link rel="stylesheet" href="app/lib/bootstrap/css/bootstrap-theme.css"> -->
+		<!-- <link rel="stylesheet" href="app/lib/bootstrap/css/bootstrap-glyphicons.css"> -->
+		<link rel="stylesheet" href="app/css/main.css">
+		<!-- <link rel="stylesheet" href="app/contrib/akamai/controlbar/controlbar.css"> -->
+
 		<script>
 			//// TODO:
-			// 1. Total QoE / Viewer's QoE / Content-based QoE -- Xu Yutong
+			// 1. Total QoE / Viewer's QoE / Content-based QoE -- Xu Yutong/Feng Fangzheng (Almost)
 			// 2. Content-based ABR -- Feng Fangzheng (V1_OFFLINE)
-			// 3. Popularity-based ABR (MEC later) -- Li Jinxi
+			// 3. Popularity-based ABR (MEC later) -- Li Jinxi (V1_OFFLINE)
 			// 3. Aframe assets on demands
 			// 4. Tiles sync -- Feng Fangzheng (DONE)
 			// 5. ERP to CMP optimization -- Li Jinxi
 			// 6. Rendering
-			// 7. Visual UI -- Gao Nianzhen
+			// 7. Visual UI -- Gao Nianzhen (DONE)
 			// 8. QUIC/WebRTC -- Chen Jiaxi
 			// 9. MEC
 			// 10. Audio codec
 		</script>
 
-		<script>
-			//// Global variables for storage
-			var players = [];  // Container for players, which is easy for us to operate in them.
-			var playerCount = 0;
-			var buffer_empty_flag = [];  // Flags for players, showing whether the player is frozen or not.
-			var lon = 90, lat = 0;  // Longitude and latitude in spherical coordinates.
-			var pointerX, pointerY;  // Position of mouse click
-			var contents = {};  // Contents from JSON file
-			var startupTime = new Date().getTime();  // Initialize the startup time
-			var totalQOE = 0;  // Compute the QoE considering all playing tiles
-			var viewerQOE = 0;  // Compute the QoE considering the tiles in FOV
-			var contentQOE = 0;  // Compute the QoE considering the tiles in FOV with contents as well
-
-			var normalizedTime = 0;  // Set the fastest mediaplayer's timeline as the normalized time
-			var totalThroughput = 0;  // Data from monitor
-			var playerBufferLength = [];  // Data from monitor
-			var playerAverageThroughput = [];  // Data from monitor
-			var playerTime = [];  // Data from monitor
-			var playerQuality = [];  // Data from monitor
-			var playerFOVScore = [];  // Data from monitor
-			var playerContentScore = [];  // Data from monitor
-			var playerPastQuality = [];  // Data from monitor's playerQuality
-
-			var playerBitrateList = [];  // Data from bitrate list
-			var requestList = [];  // Data from all HTTPRequests
-			var ssresults = {};  // Data from contents analytics CSV files
-
-			//// Global variables (flexible)
-			const captureWidth = 128;  // [For capturing each frame] Set the width of the capture pictures
-			const captureHeight = 128;  // [For capturing each frame] Set the height of the capture pictures
-			const requestDuration = 3000;  // [For computing total throughput] Set the duration we consider (ms)
-			const requestLayBack = 0;  // [For computing total throughput] Set the lay-back time for avoiding the on-going requests (ms)
-			const rotateRatio = 0.1148;  // [For focusing FOV] Set the ratio of rotating when switching the angle of view
-			const playerBufferToKeep = 6;  // [For initializing mediaplayers] Allows you to modify the buffer that is kept in source buffer in seconds
-			const playerStableBufferTime = 6;  // [For initializing mediaplayers] The time that the internal buffer target will be set to post startup/seeks (NOT top quality)
-			const playerBufferTimeAtTopQuality = 10;  // [For initializing mediaplayers] The time that the internal buffer target will be set to once playing the top quality
-			const playerMinDrift = 0.02;  // [For initializing mediaplayers] The minimum latency deviation allowed
-			const lambdaQOE = 1.0;  // [For computing QoE] Value of the quality switches constant
-			const miuQOE = 4.3;  // [For computing QoE] Stall weight
-			const omegaQOE = 4.3;  // [For computing QoE] Content weight
-			const qQOE = 'log';  // [For computing QoE] a mapping function that translates the bitrate of chunk to the quality perceived by the user (Linear || Log)
-			const a1QOE = 0.7;  // [For computing QoE] Influence of the quality of Zone 1
-			const a2QOE = 0.3;  // [For computing QoE] Influence of the quality of Zone 2
-			const a3QOE = 0.0;  // [For computing QoE] Influence of the quality of Zone 3
-		</script>
-
-		<script>
-			//// Loading sources
-			function getContents(url, callback) {
-				var xhr = new XMLHttpRequest();
-				xhr.open("GET", url, true);
-				xhr.onload = callback
-				xhr.send();
-			}
-
-			// Read json file if json is available
-			function openJSON(url) {
-				players = [];
-				buffer_empty_flag = [];
-				playerCount = 0;
-				lon = 90;
-				lat = 0;
-				contents = {};
-				getContents(url, function() {
-					contents = JSON.parse(this.responseText);
-					if (contents.ssresults != "") {
-						getContents(contents.baseUrl + contents.ssresults, function() {
-							ssresults = JSON.parse(this.responseText);
-						});
-					}
-					document.getElementById('Reset').style = "display: inline;";
-					document.getElementById('Link').style = "display: none;";
-					document.getElementById('Render').style = "display: inline;";
-					document.getElementById('json').value += " (Loaded!)";
-				});
-			}
-
-			// Read default json file if json is unavailable, then change the srcs
-			function openURLs() {
-				contents = {};
-				getContents('./default.json', function() {
-					contents = JSON.parse(this.responseText);
-					let urls = document.getElementById("url").value.split(/[(\n)\n]+/);	
-					for (let i = 0; i < contents.face; i++) {
-						for (let j = 0; j < contents.row; j++) {
-							for (let k = 0; k < contents.col; k++) {
-								contents.tiles[i][j][k].src = (i * contents.row * contents.col + j * contents.col + k) < urls.length ? urls[i * contents.row * contents.col + j * contents.col + k] : urls[urls.length - 1];
-							}
-						}
-					}
-					document.getElementById('Reset').style = "display: inline;";
-					document.getElementById('Link').style = "display: none;";
-					document.getElementById('Render').style = "display: inline;";
-					document.getElementById('url').value += " (Loaded!)";
-				});
-			}
-		</script>
-
-        <script class="code">
-			//// Building mediaplayers
-			// Pause in all the players
-			function pause_all() {
-				for (let i = 0; i < playerCount; i++) {
-					players[i].pause();
-					console.log("Player_" + i + " pauses.");
-				}
-				if (contents.audio && contents.audio != "") {
-					players[playerCount].pause();
-					console.log("Audio pauses.");
-				}
-			}
-
-			// Play in all the players
-			function play_all() {
-				for (let i = 0; i < playerCount; i++) {
-					players[i].play();
-					console.log("Player_" + i + " plays.");
-				}
-				if (contents.audio && contents.audio != "") {
-					players[playerCount].play();
-					console.log("Audio plays.");
-				}
-			}
-
-			// Triggered when any player's buffer is empty, which to stop all the players and wait for rebuffering.
-			function buffer_empty_event(e) {
-				buffer_empty_flag[e.count] = true;
-				pause_all();
-			}
-
-			// Triggered when any player's buffer is loaded (again), which to start all the players when all-set.
-			function buffer_loaded_event(e) {
-				if (buffer_empty_flag[e.count] == true) {
-					buffer_empty_flag[e.count] = false;
-					for (let i = 0; i < playerCount; i++) {
-						if (buffer_empty_flag[i] == true) {
-							return;
-						}
-					}
-					if (contents.audio && contents.audio != "" && buffer_empty_flag[playerCount] == true) {
-						return;
-					}
-					play_all();
-				}
-			}
-
-			// Initialize when loading the videos
-            function initial() {
-				let video, url;
-				// Video part
-                for (let i = 0; i < contents.face; i++) {
-					for (let j = 0; j < contents.row; j++) {
-						for (let k = 0; k < contents.col; k++) {
-							video = document.getElementById( "frame" ).contentWindow.document.querySelector("#" + "video_" + [i * contents.row * contents.col + j * contents.col + k]);
-							players[playerCount] = new dashjs.MediaPlayer().create();
-							url = contents.baseUrl + contents.tiles[i][j][k].src;
-							buffer_empty_flag[playerCount] = true;
-
-							// Don't use dash.js default rules
-							players[playerCount].updateSettings({
-								'info': {
-									'id': "video_" + [i * contents.row * contents.col + j * contents.col + k],
-									'count': playerCount,
-									'face': i,
-									'row': j,
-									'col': k,
-									'duration': contents.duration,
-									'width': contents.tiles[i][j][k].width,
-									'height': contents.tiles[i][j][k].height,
-									'location': {'x': contents.tiles[i][j][k].x, 'y': contents.tiles[i][j][k].y, 'z': contents.tiles[i][j][k].z},
-									'rotation': {'rx': contents.tiles[i][j][k].rx, 'ry': contents.tiles[i][j][k].ry, 'rz': contents.tiles[i][j][k].rz},
-									'totalThroughputNeeded': true
-								},
-								'streaming': {
-									'abr': {
-										'useDefaultABRRules': false
-									},
-									'bufferToKeep': playerBufferToKeep,
-									'stableBufferTime': playerStableBufferTime,
-									'bufferTimeAtTopQuality': playerBufferTimeAtTopQuality,
-									'fastswitchenabled': true,
-									'liveDelay': 0, 
-									'liveCatchup': {
-									 	'enabled': true,
-										 'minDrift': playerMinDrift
-									}
-								}
-							});
-							// Add my custom quality switch rule, look at [].js to know more about the structure of a custom rule
-							let index = document.getElementById("rule").selectedIndex;
-							let selectedRule = document.getElementById("rule").options[index].text;
-							switch (selectedRule) {
-								case "FOVRule":
-									players[playerCount].addABRCustomRule('qualitySwitchRules', 'FOVRule', FOVRule);
-									break;
-								// case "ThroughputRule":
-								// 	players[playerCount].addABRCustomRule('qualitySwitchRules', 'MyThroughputRule', MyThroughputRule);
-								// 	break;
-								case "HighestBitrateRule":
-									players[playerCount].addABRCustomRule('qualitySwitchRules', 'HighestBitrateRule', HighestBitrateRule);
-									break;
-								case "FOVContentRule":
-									players[playerCount].addABRCustomRule('qualitySwitchRules', 'FOVContentRule', FOVContentRule);
-									break;									
-								default:
-									players[playerCount].updateSettings({
-										'streaming': {
-											'abr': {
-												'useDefaultABRRules': true
-											}
-										}
-									});
-									break;
-							}
-
-							// Turn on the event listeners and add actions for triggers 
-							// players[playerCount].on(dashjs.MediaPlayer.events["BUFFER_EMPTY"],buffer_empty_event);
-							// players[playerCount].on(dashjs.MediaPlayer.events["BUFFER_LOADED"],buffer_loaded_event);
-
-							// Initializing
-							players[playerCount].initialize(video, url, false);
-							playerBufferLength[playerCount] = players[playerCount].getBufferLength();
-							playerAverageThroughput[playerCount] = players[playerCount].getAverageThroughput("video");
-							playerTime[playerCount] = players[playerCount].time();
-							playerQuality[playerCount] = players[playerCount].getQualityFor("video");
-							playerFOVScore[playerCount] = 0;
-							playerContentScore[playerCount] = 0;
-							playerBitrateList[playerCount] = [];
-
-							playerCount++;
-						}
-					}
-				}
-				// Audio part
-				if (contents.audio && contents.audio != "") {
-					var audio = document.getElementById( "frame" ).contentWindow.document.querySelector("#audio");
-					players[playerCount] = new dashjs.MediaPlayer().create();
-					url = contents.baseUrl + contents.audio;
-					buffer_empty_flag[playerCount] = true;
-
-					players[playerCount].updateSettings({
-						'info': {
-							'id': "audio",
-							'count': playerCount,
-							'duration': contents.duration
-						}
-					});
-
-					// Turn on the event listeners and add actions for triggers 
-					players[playerCount].on(dashjs.MediaPlayer.events["BUFFER_EMPTY"], buffer_empty_event);
-					players[playerCount].on(dashjs.MediaPlayer.events["BUFFER_LOADED"], buffer_loaded_event);
-
-					// Initializing
-					players[playerCount].initialize(audio, url, false);
-					playerBufferLength[playerCount] = players[playerCount].getBufferLength();;
-					playerAverageThroughput[playerCount] = players[playerCount].getAverageThroughput("audio");
-					playerTime[playerCount] = players[playerCount].time();
-					playerQuality[playerCount] = players[playerCount].getQualityFor("audio");
-				}
-				// Get video captures
-				for (let i = 0; i < playerCount; i++) {
-					let canvas = document.createElement( "canvas" );
-					canvas.id = "capture_" + i;
-					canvas.width = captureWidth;
-					canvas.height = captureHeight;
-					document.getElementById("captures").appendChild(canvas);
-				}
-				startupTime = new Date().getTime();
-				// Set the fastest mediaplayer's timeline as the normalized time
-				setInterval(setNormalizedTime, 10);
-				// Compute total throughput according to recent HTTP requests
-				setInterval(computetotalThroughput, 1000);
-				// Compute QoE
-				setInterval(computeQoE, 1000);
-				// Show the data in monitor (function below)
-				setInterval(updateStats, 100);
-				// Capture the pictures from mediaplayers
-				setInterval(function () {
-					for (let i = 0; i < playerCount; i++) {
-						document.getElementById("capture_" + i).getContext('2d').drawImage(document.getElementById( "frame" ).contentWindow.document.querySelector("#" + "video_" + i), 0, 0, captureWidth, captureHeight);
-						// img.src = canvas.toDataURL("image/png");
-					}
-				}, 500);
-				document.getElementById('Load').style = "display: none;";
-				document.getElementById('Play').style = "display: inline;";
-				document.getElementById('Pause').style = "display: inline;";
-			}
-			
-			// Set the fastest mediaplayer's timeline as the normalized time
-			function setNormalizedTime() {
-				normalizedTime = players[0].time();
-				for (let i = 0; i < playerCount; i++) {
-					if (players[i].time() > normalizedTime) {
-						normalizedTime = players[i].time();
-					}
-				}
-				if (contents.audio && contents.audio != "") {
-					if (players[playerCount].time() > normalizedTime) {
-						normalizedTime = players[playerCount].time();
-					}
-				}
-			}
-
-			// Compute total throughput according to recent HTTP requests (Total data in ONE second)
-			function computetotalThroughput() {
-				const precurTime = new Date().getTime();  // Get current time
-				const curTime = precurTime - requestLayBack;
-				let TotalDataInAnInterval = 0;  // Byte
-				let TotalTimeInAnInterval = requestDuration;  // ms
-				let requestListLength = requestList.length;
-				let requestListIndex = requestListLength - 1;
-				let requestTimeIndex = curTime;
-				while (requestListLength > 0 && requestListIndex >= 0) {
-					let requestFinishTime = requestList[requestListIndex]._tfinish.getTime();
-					let requestResponseTime  = requestList[requestListIndex].tresponse.getTime();
-					if (requestFinishTime > curTime - requestDuration && requestResponseTime < curTime) {
-						// Accumulate the downloaded data (Byte)
-						let requestDownloadBytes = requestList[requestListIndex].trace.reduce((a, b) => a + b.b[0], 0);
-						if (requestResponseTime > curTime - requestDuration) {
-							if (requestFinishTime <= curTime) {
-								TotalDataInAnInterval += requestDownloadBytes;
-							} else {
-								TotalDataInAnInterval += ( requestDownloadBytes * ( ( curTime - requestResponseTime ) / ( requestFinishTime - requestResponseTime ) ) );
-							}
-						} else {
-							if (requestFinishTime <= curTime) {
-								TotalDataInAnInterval += ( requestDownloadBytes * ( ( requestFinishTime - (curTime - requestDuration) ) / ( requestFinishTime - requestResponseTime ) ) );
-							} else {
-								TotalDataInAnInterval += ( requestDownloadBytes * ( requestDuration / ( requestFinishTime - requestResponseTime ) ) );
-							}
-						}
-						// Subtract the free time (ms)
-						if (requestTimeIndex > requestFinishTime) {
-							TotalTimeInAnInterval -= (requestTimeIndex - requestFinishTime);
-						}
-						requestTimeIndex = requestResponseTime;						
-					}
-					requestListIndex--;
-				}
-				if (curTime - requestDuration < requestTimeIndex) {
-					TotalTimeInAnInterval -= (requestTimeIndex - (curTime - requestDuration));
-				}
-				if (TotalTimeInAnInterval == 0) {
-					TotalTimeInAnInterval = 1;
-				}
-				totalThroughput = Math.round((8 * TotalDataInAnInterval) / (TotalTimeInAnInterval / 1000));  // bps
-			}
-
-			// Compute QoE
-			function computeQoE() {
-				if (playerPastQuality.length == 0 || playerQuality.length == 0) {
-					totalQOE = NaN;
-					viewerQOE = NaN;
-					contentQOE = NaN;
-					playerPastQuality = playerQuality;
-					return;
-				}
-				let pretotalQOE = 0;  // = Quality - miu * Stalls - lambda * Quality switches
-				let previewerQOE = 0;  // = [a1 a2 a3] * (Quality - miu * Stalls - lambda * Quality switches)
-				let precontentQOE = 0;  // = [a1 a2 a3] * (Quality - miu * Stalls - lambda * Quality switches + omega * Content score)
-				for (let i = 0; i < playerCount; i++) {
-					////////////////////////////////// Regardless of stall, only totalQOE //////////////////////////////////
-					let playerSettings = players[i].getSettings().info;
-					// Compute divation between angle of view and location of tile
-					let r = Math.sqrt(playerSettings.location.x * playerSettings.location.x + playerSettings.location.y * playerSettings.location.y + playerSettings.location.z * playerSettings.location.z);
-					let tile_theta = Math.acos(playerSettings.location.y / (r == 0 ? 1 : r));
-					let tile_phi = Math.atan(playerSettings.location.x / (playerSettings.location.z == 0 ? 1 : playerSettings.location.z));
-					let view_theta = (90 - lat) * (Math.PI / 180);
-					let view_phi = (270 - lon >= 0 ? 270 - lon : 270 - lon + 360) * (Math.PI / 180);
-					let tile_z = Math.sin(tile_theta) * Math.cos(tile_phi);
-					tile_z = playerSettings.location.z < 0 ? tile_z < 0 ? tile_z : -tile_z : tile_z;
-					let tile_x = Math.sin(tile_theta) * Math.sin(tile_phi);
-					let tile_y = Math.cos(tile_theta);
-					let view_z = Math.sin(view_theta) * Math.cos(view_phi);
-					let view_x = Math.sin(view_theta) * Math.sin(view_phi);
-					let view_y = Math.cos(view_theta);
-					let divation = Math.acos((tile_z * view_z + tile_x * view_x + tile_y * view_y) / (Math.sqrt(tile_z * tile_z + tile_x * tile_x + tile_y * tile_y) * Math.sqrt(view_z * view_z + view_x * view_x + view_y * view_y))) * (180 / Math.PI);
-					console.log([i, playerSettings, r, tile_theta, tile_phi, view_theta, view_phi, tile_z, tile_x, tile_y, view_z, view_x, view_y, divation]);
-					switch (qQOE) {
-						case 'linear':
-							pretotalQOE = pretotalQOE + playerBitrateList[i][playerQuality[i]].bitrate - lambdaQOE * Math.abs(playerBitrateList[i][playerQuality[i]].bitrate - playerBitrateList[i][playerPastQuality[i]].bitrate);
-							previewerQOE = previewerQOE + (divation < 61 ? a1QOE : divation < 121 ? a2QOE : a3QOE) * (playerBitrateList[i][playerQuality[i]].bitrate - lambdaQOE * Math.abs(playerBitrateList[i][playerQuality[i]].bitrate - playerBitrateList[i][playerPastQuality[i]].bitrate));
-							break;
-						case 'log':
-							pretotalQOE = pretotalQOE + Math.log(playerBitrateList[i][playerQuality[i]].bitrate + 1) - lambdaQOE * Math.abs(Math.log(playerBitrateList[i][playerQuality[i]].bitrate + 1) - Math.log(playerBitrateList[i][playerPastQuality[i]].bitrate + 1));
-							previewerQOE = previewerQOE + (divation < 61 ? a1QOE : divation < 121 ? a2QOE : a3QOE) * (Math.log(playerBitrateList[i][playerQuality[i]].bitrate + 1) - lambdaQOE * Math.abs(Math.log(playerBitrateList[i][playerQuality[i]].bitrate + 1) - Math.log(playerBitrateList[i][playerPastQuality[i]].bitrate + 1)));
-							break;
-						default:
-							break;
-					}
-				}
-				totalQOE = pretotalQOE;
-				viewerQOE = previewerQOE;
-				contentQOE = precontentQOE;
-				playerPastQuality = playerQuality;
-			}
-
-			// Show the data in monitor
-			function updateStats() {
-				document.querySelector("#stats").innerHTML = "---STATS MONITOR---<br><br><br>";
-				document.querySelector("#stats").innerHTML += "Normalized time: ";
-				document.querySelector("#stats").innerHTML += normalizedTime.toFixed(2);
-				document.querySelector("#stats").innerHTML += " s<br>";
-				document.querySelector("#stats").innerHTML += "Total Throughput: ";
-				document.querySelector("#stats").innerHTML += totalThroughput >= 8000000 ? (totalThroughput / 8000000).toFixed(2) : (totalThroughput / 8000).toFixed(0);  // MB/s or kB/s
-				document.querySelector("#stats").innerHTML += totalThroughput >= 8000000 ? " MB/s<br>" : " kB/s<br>";
-				document.querySelector("#stats").innerHTML += "Total QoE: ";
-				document.querySelector("#stats").innerHTML += totalQOE.toFixed(2);
-				document.querySelector("#stats").innerHTML += "<br>"
-				document.querySelector("#stats").innerHTML += "Viewer's QoE: ";
-				document.querySelector("#stats").innerHTML += viewerQOE.toFixed(2);
-				document.querySelector("#stats").innerHTML += "<br>"
-				document.querySelector("#stats").innerHTML += "Content-based QoE: ";
-				document.querySelector("#stats").innerHTML += contentQOE.toFixed(2);
-				document.querySelector("#stats").innerHTML += "<br><br>"
-				for (let i = 0; i < playerCount; i++) {
-					if (playerBitrateList[i].length == 0) {
-						playerBitrateList[i] = players[i].getBitrateInfoListFor("video");
-					}
-					playerBufferLength[i] = players[i].getBufferLength();
-					playerAverageThroughput[i] = players[i].getAverageThroughput("video");
-					playerTime[i] = players[i].time();
-					playerQuality[i] = players[i].getQualityFor("video");
-					document.querySelector("#stats").innerHTML += ( "Video_" + i + ":<br>" );
-					document.querySelector("#stats").innerHTML += "Buffer level ";
-					document.querySelector("#stats").innerHTML += playerBufferLength[i].toFixed(2);
-					document.querySelector("#stats").innerHTML += " s<br>";
-					document.querySelector("#stats").innerHTML += "Average Throughput ";
-					document.querySelector("#stats").innerHTML += playerAverageThroughput[i].toFixed(0);
-					document.querySelector("#stats").innerHTML += " bps<br>";
-					document.querySelector("#stats").innerHTML += "Time ";
-					document.querySelector("#stats").innerHTML += playerTime[i].toFixed(2);
-					document.querySelector("#stats").innerHTML += " s<br>";
-					document.querySelector("#stats").innerHTML += "Quality ";
-					document.querySelector("#stats").innerHTML += playerQuality[i].toFixed(0);
-					document.querySelector("#stats").innerHTML += "<br>";
-					document.querySelector("#stats").innerHTML += "FOV Score ";
-					document.querySelector("#stats").innerHTML += playerFOVScore[i].toFixed(0);
-					document.querySelector("#stats").innerHTML += "<br>";
-					document.querySelector("#stats").innerHTML += "Content Score ";
-					document.querySelector("#stats").innerHTML += playerContentScore[i].toFixed(0);
-					document.querySelector("#stats").innerHTML += "<br>";
-					document.querySelector("#stats").innerHTML += "Total time: ";
-					document.querySelector("#stats").innerHTML += (playerBufferLength[i] + playerTime[i]).toFixed(2);
-					document.querySelector("#stats").innerHTML += " s<br><br>";
-				}
-				if (contents.audio && contents.audio != "") {
-					playerBufferLength[playerCount] = players[playerCount].getBufferLength();
-					playerAverageThroughput[playerCount] = players[playerCount].getAverageThroughput("audio");
-					playerTime[playerCount] = players[playerCount].time();
-					playerQuality[playerCount] = players[playerCount].getQualityFor("audio");
-					document.querySelector("#stats").innerHTML += ( "Audio:<br>" );
-					document.querySelector("#stats").innerHTML += "Buffer level ";
-					document.querySelector("#stats").innerHTML += playerBufferLength[playerCount].toFixed(2);
-					document.querySelector("#stats").innerHTML += " s<br>";
-					document.querySelector("#stats").innerHTML += "Average Throughput ";
-					document.querySelector("#stats").innerHTML += playerAverageThroughput[playerCount].toFixed(0);
-					document.querySelector("#stats").innerHTML += " bps<br>";
-					document.querySelector("#stats").innerHTML += "Time ";
-					document.querySelector("#stats").innerHTML += playerTime[playerCount].toFixed(2);
-					document.querySelector("#stats").innerHTML += " s<br>";
-					document.querySelector("#stats").innerHTML += "Quality ";
-					document.querySelector("#stats").innerHTML += playerQuality[playerCount].toFixed(0);
-					document.querySelector("#stats").innerHTML += "<br>";
-					document.querySelector("#stats").innerHTML += "Total time: ";
-					document.querySelector("#stats").innerHTML += (playerBufferLength[playerCount] + playerTime[playerCount]).toFixed(2);
-					document.querySelector("#stats").innerHTML += " s<br><br>";
-				}
-			}
-		</script>
-
-		<script>
-			//// Operations connected to buttons
-			// Open the iframe according to the number of faces, rows and cols
-			function aframe_init() {
-				if (contents == {}) {
-					return;
-				}
-				document.getElementById( 'frame' ).src = "./" + contents.face + "_" + contents.row + "_" + contents.col + ".html";
-				lon = 90;
-				lat = 0;
-				document.getElementById('Render').style = "display: none;";
-				document.getElementById('Load').style = "display: inline;";
-			}
-			// Switch the source automatically according to the situation
-			function VOD_LIVE() {
-				let index = document.getElementById("type").selectedIndex;
-				let selectedRule = document.getElementById("type").options[index].text;
-				switch (selectedRule) {
-					case "SVOD":
-						document.getElementById("json").value = "http://222.20.77.111/processed/CMPVP907/aframeVP907.json";
-						document.getElementById("url").value = "";
-						break;
-					case "LVOD":
-						document.getElementById("json").value = "http://localhost/CMPVP907/aframeVP907.json";
-						document.getElementById("url").value = "";
-						break;
-					case "LIVE":
-						document.getElementById("json").value = "http://222.20.77.111/dash/default.json";
-						document.getElementById("url").value = "";
-						break;
-					case "BUNNY":
-						document.getElementById("json").value = "";
-						document.getElementById("url").value = "https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd";
-						break;
-					default:
-						document.getElementById("json").value = "";
-						document.getElementById("url").value = "";
-						break;
-				}
-			}
-		</script>
-
 		<style>
 			body {
 				background-color: #ffffff;
+				min-width: 1000px;
+				overflow-x: hidden;
+			}
+			table {
+				border-collapse: collapse;
+			}
+			table, th, td {
+				border: 1px solid black;
+				padding-left: 5px;
+				padding-right: 5px;
+				text-align: center;
 			}
 		</style>
 		
 	</head>
 	
-    <body>
+    <body ng-controller="DashController">
 
 		<iframe id="frame" width="1000" height="500"></iframe>
 
-		<div style="z-index: 999; height: 22px; width: 500px;">
+		<div style="height: 22px; width: 500px; margin: 15px;">
 			<button id="Reset" style="display: none;" onclick="location.reload();">Reset</button>
-			<button id="Link" onclick="document.getElementById('json').value != '' ? openJSON(document.getElementById('json').value) : openURLs();">Link</button>
-			<button id="Render" style="display: none;" onclick="aframe_init();">Render</button>
-			<button id="Load" style="display: none;" onclick="initial();">Load</button>
-			<button id="Play" style="display: none;" onclick="play_all();">Play</button>
-			<button id="Pause" style="display: none;" onclick="pause_all();">Pause</button>
+			<button id="Link" ng-click="json != '' ? openJSON(json) : openURLs(url);">Link</button>			
+			<button id="Render" style="display: none;" ng-click="aframe_init();">Render</button>
+			<button id="Load" style="display: none;" ng-click="initial();">Load</button>
+			<button id="Play" style="display: none;" ng-click="play_all();">Play</button>
+			<button id="Pause" style="display: none;" ng-click="pause_all();">Pause</button>
 		</div>
 		
-		<div style="z-index: 999; color: #000000; height: 250px;">
+		<div style="color: #000000; height: 250px; font-size: 14px; margin: 15px;">
 			<br>JSON(Empty then use the URLs below):<br>
-			<textarea id="json" rows="1" cols="100">http://222.20.77.111/processed/CMPVP907/aframeVP907.json</textarea>			
+			<input id ="json" ng-model="json" style="height: 20px; width: 800px;">			
 			<br>URL(Used when JSON is empty):<br>
-			<textarea id="url" rows="6" cols="100"></textarea>
+			<input id ="url" ng-model="url" style="height: 100px; width: 800px;">
 			<br>
-			<select id="type" onchange="VOD_LIVE();">
+			<select id="type" ng-model="type" ng-change="VOD_LIVE(type);">
+				<option value ="LVOD" selected>LVOD</option>
 				<option value ="SVOD">SVOD</option>
-				<option value ="LVOD">LVOD</option>
 				<option value ="LIVE">LIVE</option>
 				<option value ="BUNNY">BUNNY</option>
 			</select>
@@ -582,47 +103,88 @@
 				<option value ="DefaultRule">DefaultRule</option>
 			</select>
 			<br>
-			<span id="stats" style="width: 300px; position: absolute; top: 10px; right: 10px; background-color: whitesmoke;">Monitor Loaded.</span>
+			<span id="stats" style="display: none; width: 300px; position: absolute; top: 10px; right: 10px; background-color: whitesmoke;">Monitor Loaded.</span>
 		</div>
 
-		<div id="captures" style="width: 768px;"></div>
+		<div id="captures" style="width: 768px; margin: 15px;"></div>
+		<div id="statstable" style="margin: 15px;">
+			<table>
+				<thead>
+					<tr>
+						<th>Normalized Time</th>
+						<th>Total Throughput</th>
+						<th>Total QoE</th>
+						<th>Viewer's QoE</th>
+						<th>Content-based QoE</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+					</tr>
+				</tbody>
+			</table>
+			<br>
+			<table>
+				<thead>
+					<tr>
+						<th>Player ID</th>
+						<th>Buffer Level</th>
+						<th>Average Throughput</th>
+						<th>Timeline</th>
+						<th>Quality</th>
+						<th>FOV Score</th>
+						<th>Content Score</th>
+						<th>Total loaded Time</th>
+						<th>Catchup State</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+						<td></td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
 
-		
-		<script>
-			//// Enable the FOV event listener in iframe
-			document.getElementById('frame').onload = function () {
-				document.getElementById('frame').contentDocument.addEventListener( 'pointerdown', onPointerDown );
-			}
+		<!-- CHARTING -->
+		<div class="chart-panel">
+			<div class="chart-controls">
+				<div class="btn-group">
+					<button id="disable-chart-btn" class="btn btn-primary" ng-click="clearchartData_quality()" ng-cloak>Clear
+					</button>
+				</div>
+				<div id="legend-wrapper" class="legend-row">
+				</div>
 
-            function onPointerDown( event ) {
-				if ( event.isPrimary === false ) return;
-				pointerX = event.clientX;
-				pointerY = event.clientY;
-				document.getElementById('frame').contentDocument.addEventListener( 'pointermove', onPointerMove );
-				document.getElementById('frame').contentDocument.addEventListener( 'pointerup', onPointerUp );
-				console.log("Pointer downs. lon: "+ lon + "; lat: " + lat + ".");
-			}
-
-			function onPointerMove( event ) {
-				if ( event.isPrimary === false ) return;
-				lon += ( event.clientX - pointerX ) * rotateRatio;  // In Chrome, turn right then the lon increases.
-				lon > 360 ? lon = lon - 360 : null;
-				lon < 0 ? lon = lon + 360 : null;
-				lat -= ( event.clientY - pointerY ) * rotateRatio;  // In Chrome, turn up then the lat increases.
-				lat > 90 ? lat = 90 : null;
-				lat < -90 ? lat = -90 : null;
-				pointerX = event.clientX;
-				pointerY = event.clientY;
-				console.log("Pointer moves. lon: "+ lon + "; lat: " + lat + ".");
-			}
-
-			function onPointerUp() {
-				if ( event.isPrimary === false ) return;
-				document.getElementById('frame').contentDocument.removeEventListener( 'pointermove', onPointerMove );
-				document.getElementById('frame').contentDocument.removeEventListener( 'pointerup', onPointerUp );
-				console.log("Pointer ups. lon: "+ lon + "; lat: " + lat + ".");
-			}
-		</script>
+			</div>
+			<div id="chart-wrapper">
+				<span style="text-align:center;display:block;">VIDEO_QUALITY</span>
+				<div class="chart-inventory">
+					<flot dataset="chartData_quality" options="chartOptions"></flot>
+				</div>
+				<span style="text-align:center;display:block;">VIDEO_BUFFER</span>
+				<div class="chart-inventory">
+					<flot dataset="chartData_buffer" options="chartOptions"></flot>
+				</div>
+				<span style="text-align:center;display:block;">VIDEO_THROUGHPUT</span>
+				<div class="chart-inventory">
+					<flot dataset="chartData_throughput" options="chartOptions"></flot>
+				</div>
+			</div>
+		</div>
         
 	</body>
 	

@@ -55,6 +55,9 @@ function ThroughputHistory(config) {
 
     const settings = config.settings;
 
+    var appElement = document.querySelector('[ng-controller=DashController]');
+    var $scope = window.angular.element(appElement).scope();
+
     let throughputDict,
         latencyDict,
         ewmaThroughputDict,
@@ -83,8 +86,8 @@ function ThroughputHistory(config) {
             return;
         }
 
-        if (settings.get().info.totalThroughputNeeded && window.requestList) {
-            window.requestList.push(httpRequest);
+        if (settings.get().info.totalThroughputNeeded && $scope !== undefined && $scope.requestList !== undefined) {
+            $scope.requestList.push(httpRequest);
         }
 
         const latencyTimeInMilliseconds = (httpRequest.tresponse.getTime() - httpRequest.trequest.getTime()) || 1;

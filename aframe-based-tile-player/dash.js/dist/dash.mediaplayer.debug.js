@@ -36960,6 +36960,9 @@ function PlaybackController() {
     var context = this.context;
     var eventBus = (0, _coreEventBus2['default'])(context).getInstance();
 
+    var appElement = document.querySelector('[ng-controller=DashController]');
+    var $scope = window.angular.element(appElement).scope();
+
     var instance = undefined,
         logger = undefined,
         streamController = undefined,
@@ -37245,10 +37248,11 @@ function PlaybackController() {
             return 0;
         }
 
-        if (!isDynamic) {
-            var _now = window.normalizedTime * 1000 + timelineConverter.getClientTimeOffset() * 1000;
+        if (!isDynamic && $scope !== undefined && $scope.normalizedTime !== undefined) {
+            var _now = $scope.normalizedTime * 1000 + timelineConverter.getClientTimeOffset() * 1000;
             return Math.max(((_now - availabilityStartTime - currentTime * 1000) / 1000).toFixed(3), 0);
         }
+
         var now = new Date().getTime() + timelineConverter.getClientTimeOffset() * 1000;
         return Math.max(((now - availabilityStartTime - currentTime * 1000) / 1000).toFixed(3), 0);
     }
@@ -37517,8 +37521,14 @@ function PlaybackController() {
         //isDynamic &&
         _isCatchupEnabled() && settings.get().streaming.liveCatchup.playbackRate > 0 && !isPaused() && !isSeeking()) {
             if (_needToCatchUp()) {
+                if ($scope !== undefined && $scope.playerCatchUp !== undefined) {
+                    $scope.playerCatchUp[settings.get().info.count] = true;
+                }
                 startPlaybackCatchUp();
             } else {
+                if ($scope !== undefined && $scope.playerCatchUp !== undefined) {
+                    $scope.playerCatchUp[settings.get().info.count] = false;
+                }
                 stopPlaybackCatchUp();
             }
         }
@@ -44957,6 +44967,9 @@ function ThroughputHistory(config) {
 
     var settings = config.settings;
 
+    var appElement = document.querySelector('[ng-controller=DashController]');
+    var $scope = window.angular.element(appElement).scope();
+
     var throughputDict = undefined,
         latencyDict = undefined,
         ewmaThroughputDict = undefined,
@@ -44985,8 +44998,8 @@ function ThroughputHistory(config) {
             return;
         }
 
-        if (settings.get().info.totalThroughputNeeded && window.requestList) {
-            window.requestList.push(httpRequest);
+        if (settings.get().info.totalThroughputNeeded && $scope !== undefined && $scope.requestList !== undefined) {
+            $scope.requestList.push(httpRequest);
         }
 
         var latencyTimeInMilliseconds = httpRequest.tresponse.getTime() - httpRequest.trequest.getTime() || 1;

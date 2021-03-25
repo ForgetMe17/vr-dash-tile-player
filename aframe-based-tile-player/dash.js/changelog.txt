@@ -24,9 +24,53 @@ Modifications {
     Add: [AbrController.js] AbrController.getSettings();
     Add: [BufferController.js] BufferController.triggerEvent(...) { payload.info = settings.get().info; };
     Add: [ThroughputHistory.js] const AVERAGE_THROUGHPUT_SAMPLE_AMOUNT_TOTALTHROUGHPUTNEEDED = 1;
-    Add: [ThroughputHistory.js] ThroughputHistory.push(...) { ... if (settings.get().info.totalThroughputNeeded && window.requestList) { requestList.push(httpRequest); } ... };
+    Add: [ThroughputHistory.js] ThroughputHistory.push(...) { ...
+                                    if (settings.get().info.totalThroughputNeeded && $scope !== undefined && $scope.requestList !== undefined) {
+                                        $scope.requestList.push(httpRequest);
+                                    }
+                                ... };
+    Add: [ThroughputHistory.js] var appElement = document.querySelector('[ng-controller=DashController]');
+                                var $scope = window.angular.element(appElement).scope();
+    Add: [PlaybackController.js] var appElement = document.querySelector('[ng-controller=DashController]');
+                                 var $scope = window.angular.element(appElement).scope();                             
 
-    Change: [PlaybackController.js] PlaybackController.onPlaybackProgression() { if ( //!isDynamic && ... ) ... };  // Consider the situation whatever isDynamic is
-    Change: [PlaybackController.js] PlaybackController.getCurrentLiveLatency() { ... };  // Change totally with compatibility for non-isDynamic
+    Change: [PlaybackController.js] PlaybackController.onPlaybackProgression() {  // Consider the situation whatever isDynamic is
+                                        if (
+                                            //isDynamic &&
+                                            _isCatchupEnabled() &&
+                                            settings.get().streaming.liveCatchup.playbackRate > 0 &&
+                                            !isPaused() &&
+                                            !isSeeking()
+                                        ) {
+                                            if (_needToCatchUp()) {
+                                                if ($scope !== undefined && $scope.playerCatchUp !== undefined) {
+                                                    $scope.playerCatchUp[settings.get().count] = true;
+                                                }
+                                                startPlaybackCatchUp();
+                                            } else {
+                                                if ($scope !== undefined && $scope.playerCatchUp !== undefined) {
+                                                    $scope.playerCatchUp[settings.get().count] = false;
+                                                }
+                                                stopPlaybackCatchUp();
+                                            }
+                                        }
+                                    };
+    Change: [PlaybackController.js] PlaybackController.getCurrentLiveLatency() {  // Change totally with compatibility for non-isDynamic
+                                        if (isNaN(availabilityStartTime)) {
+                                            return NaN;
+                                        }
+                                        let currentTime = getNormalizedTime();
+                                        if (isNaN(currentTime) || currentTime === 0) {
+                                            return 0;
+                                        }
+
+                                        if (!isDynamic && $scope !== undefined && $scope.normalizedTime !== undefined) {
+                                            const now = $scope.normalizedTime * 1000 + timelineConverter.getClientTimeOffset() * 1000;
+                                            return Math.max(((now - availabilityStartTime - currentTime * 1000) / 1000).toFixed(3), 0);
+                                        }
+                                        
+                                        const now = new Date().getTime() + timelineConverter.getClientTimeOffset() * 1000;
+                                        return Math.max(((now - availabilityStartTime - currentTime * 1000) / 1000).toFixed(3), 0);
+                                    };
     Change: [ThroughputHistory.js] ThroughputHistory.getSampleSize(...) { ... if (isThroughput) { sampleSize = settings.get().info.totalThroughputNeeded ? AVERAGE_THROUGHPUT_SAMPLE_AMOUNT_TOTALTHROUGHPUTNEEDED : isLive ? AVERAGE_THROUGHPUT_SAMPLE_AMOUNT_LIVE : AVERAGE_THROUGHPUT_SAMPLE_AMOUNT_VOD; } ... };
 }

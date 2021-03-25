@@ -42,6 +42,9 @@ function PlaybackController() {
     const context = this.context;
     const eventBus = EventBus(context).getInstance();
 
+    var appElement = document.querySelector('[ng-controller=DashController]');
+    var $scope = window.angular.element(appElement).scope();
+
     let instance,
         logger,
         streamController,
@@ -325,10 +328,11 @@ function PlaybackController() {
             return 0;
         }
 
-        if (!isDynamic) {
-            const now = window.normalizedTime * 1000 + timelineConverter.getClientTimeOffset() * 1000;
+        if (!isDynamic && $scope !== undefined && $scope.normalizedTime !== undefined) {
+            const now = $scope.normalizedTime * 1000 + timelineConverter.getClientTimeOffset() * 1000;
             return Math.max(((now - availabilityStartTime - currentTime * 1000) / 1000).toFixed(3), 0);
         }
+
         const now = new Date().getTime() + timelineConverter.getClientTimeOffset() * 1000;
         return Math.max(((now - availabilityStartTime - currentTime * 1000) / 1000).toFixed(3), 0);
     }
@@ -602,8 +606,14 @@ function PlaybackController() {
             !isSeeking()
         ) {
             if (_needToCatchUp()) {
+                if ($scope !== undefined && $scope.playerCatchUp !== undefined) {
+                    $scope.playerCatchUp[settings.get().info.count] = true;
+                }
                 startPlaybackCatchUp();
             } else {
+                if ($scope !== undefined && $scope.playerCatchUp !== undefined) {
+                    $scope.playerCatchUp[settings.get().info.count] = false;
+                }
                 stopPlaybackCatchUp();
             }
         }
