@@ -5,14 +5,15 @@
 1. dash.js - For adaptive bitrate streaming via DASH.
 2. three.js - For 3D rendering, with CSS3DRenderer.js so far (WebXR not supported).
 3. aframe - For 3D rendering (WebXR supported for any videos based on VP9).
-4. sensitive segmentation suites - For video's content analystics.
+4. angular.js - For data virtualization and code optimization.
+5. sensitive segmentation suites - For video's content analystics.
 
 ### ABR Algorithms we use
 
 1. FOVRule - Choose the bitrates for each tile according to FOV.
 2. HighestBitrateRule - Always choose the highest bitrate for each tile.
 3. FOVContentRule - Choose the bitrates for each tile according to FOV and contents.
-4. ThroughputRule - Choose the bitrates by observing each tile's throughput history independently (by dash.js). 
+4. DefaultRule - Using default ABR rules by dash.js (observing each tile's stats independently). 
 
 Default: Using FOVRule as default. If need please change the config in HTML page.
 
