@@ -5,6 +5,11 @@
     <head>
 
 		<meta charset="utf-8"/>
+		<link rel="stylesheet" href="app/lib/bootstrap/css/bootstrap.min.css">
+		<link rel="stylesheet" href="app/lib/bootstrap/css/bootstrap-theme.css">
+		<link rel="stylesheet" href="app/lib/bootstrap/css/bootstrap-glyphicons.css">
+		<link rel="stylesheet" href="app/css/main.css">
+		<link rel="stylesheet" href="app/contrib/akamai/controlbar/controlbar.css">
 		<title>(^_^)~ VR PLAYER ~(^_^)</title>
 
 		<script src="app/lib/jquery/jquery-3.1.1.min.js"></script>
@@ -30,12 +35,6 @@
 		<script src="HighestBitrateRule.js" class="code"></script>
 		<script src="FOVContentRule.js" class="code"></script>
 
-		<link rel="stylesheet" href="app/lib/bootstrap/css/bootstrap.min.css">
-		<!-- <link rel="stylesheet" href="app/lib/bootstrap/css/bootstrap-theme.css"> -->
-		<!-- <link rel="stylesheet" href="app/lib/bootstrap/css/bootstrap-glyphicons.css"> -->
-		<link rel="stylesheet" href="app/css/main.css">
-		<!-- <link rel="stylesheet" href="app/contrib/akamai/controlbar/controlbar.css"> -->
-
 		<script>
 			//// TODO:
 			// 1. Total QoE / Viewer's QoE / Content-based QoE -- Xu Yutong/Feng Fangzheng (Almost)
@@ -53,139 +52,201 @@
 
 		<style>
 			body {
-				background-color: #ffffff;
+				background-color: #ececec;
 				min-width: 1000px;
 				overflow-x: hidden;
-			}
-			table {
-				border-collapse: collapse;
-			}
-			table, th, td {
-				border: 1px solid black;
-				padding-left: 5px;
-				padding-right: 5px;
-				text-align: center;
 			}
 		</style>
 		
 	</head>
 	
     <body ng-controller="DashController">
-
-		<iframe id="frame" width="1000" height="500"></iframe>
-
-		<div style="height: 22px; width: 500px; margin: 15px;">
-			<button id="Reset" style="display: none;" onclick="location.reload();">Reset</button>
-			<button id="Link" ng-click="json != '' ? openJSON(json) : openURLs(url);">Link</button>			
-			<button id="Render" style="display: none;" ng-click="aframe_init();">Render</button>
-			<button id="Load" style="display: none;" ng-click="initial();">Load</button>
-			<button id="Play" style="display: none;" ng-click="play_all();">Play</button>
-			<button id="Pause" style="display: none;" ng-click="pause_all();">Pause</button>
-		</div>
-		
-		<div style="color: #000000; height: 250px; font-size: 14px; margin: 15px;">
-			<br>JSON(Empty then use the URLs below):<br>
-			<input id ="json" ng-model="json" style="height: 20px; width: 800px;">			
-			<br>URL(Used when JSON is empty):<br>
-			<input id ="url" ng-model="url" style="height: 100px; width: 800px;">
-			<br>
-			<select id="type" ng-model="type" ng-change="VOD_LIVE(type);">
-				<option value ="LVOD" selected>LVOD</option>
-				<option value ="SVOD">SVOD</option>
-				<option value ="LIVE">LIVE</option>
-				<option value ="BUNNY">BUNNY</option>
-			</select>
-			<select id="rule">
-				<option value ="FOVRule">FOVRule</option>
-				<!-- <option value ="ThroughputRule">ThroughputRule</option>  -->
-				<option value ="HighestBitrateRule">HighestBitrateRule</option>
-				<option value ="FOVContentRule">FOVContentRule</option>
-				<option value ="DefaultRule">DefaultRule</option>
-			</select>
-			<br>
-			<span id="stats" style="display: none; width: 300px; position: absolute; top: 10px; right: 10px; background-color: whitesmoke;">Monitor Loaded.</span>
-		</div>
-
-		<div id="captures" style="width: 768px; margin: 15px;"></div>
-		<div id="statstable" style="margin: 15px;">
-			<table>
-				<thead>
-					<tr>
-						<th>Normalized Time</th>
-						<th>Total Throughput</th>
-						<th>Total QoE</th>
-						<th>Viewer's QoE</th>
-						<th>Content-based QoE</th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr>
-						<td></td>
-						<td></td>
-						<td></td>
-						<td></td>
-						<td></td>
-					</tr>
-				</tbody>
-			</table>
-			<br>
-			<table>
-				<thead>
-					<tr>
-						<th>Player ID</th>
-						<th>Buffer Level</th>
-						<th>Average Throughput</th>
-						<th>Timeline</th>
-						<th>Quality</th>
-						<th>FOV Score</th>
-						<th>Content Score</th>
-						<th>Total loaded Time</th>
-						<th>Catchup State</th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr>
-						<td></td>
-						<td></td>
-						<td></td>
-						<td></td>
-						<td></td>
-						<td></td>
-						<td></td>
-						<td></td>
-						<td></td>
-					</tr>
-				</tbody>
-			</table>
-		</div>
-
-		<!-- CHARTING -->
-		<div class="chart-panel">
-			<div class="chart-controls">
-				<div class="btn-group">
-					<button id="disable-chart-btn" class="btn btn-primary" ng-click="clearchartData_quality()" ng-cloak>Clear
-					</button>
-				</div>
-				<div id="legend-wrapper" class="legend-row">
-				</div>
-
-			</div>
-			<div id="chart-wrapper">
-				<span style="text-align:center;display:block;">VIDEO_QUALITY</span>
-				<div class="chart-inventory">
-					<flot dataset="chartData_quality" options="chartOptions"></flot>
-				</div>
-				<span style="text-align:center;display:block;">VIDEO_BUFFER</span>
-				<div class="chart-inventory">
-					<flot dataset="chartData_buffer" options="chartOptions"></flot>
-				</div>
-				<span style="text-align:center;display:block;">VIDEO_THROUGHPUT</span>
-				<div class="chart-inventory">
-					<flot dataset="chartData_throughput" options="chartOptions"></flot>
+		<div class="container">
+			<div class="row title-header">
+				<div class="branding">
+					<!-- <a href="http://dashif.org/" target="_blank"><img class="image" src="app/img/if.png"/></a> -->
+					<span id="big-title">VR PLAYER</span>
 				</div>
 			</div>
+
+			<div class="row">
+				<div class="input-group">
+					<div id="desktop-streams" class="input-group-btn">
+						<button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown">
+							Stream <span class="caret"></span>
+						</button>
+						<ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu">
+							<li ng-repeat="item in availableStreams" class="ng-scope" ng-mouseover="onStreamItemHover(item)"><a class="ng-binding" ng-click="setStream(item)">{{item.name}}</a></li>
+						</ul>
+					</div>
+					<input type="text" class="form-control" ng-model="selectedItem.value" ng-change ="changeStream()">
+					<span class="input-group-btn">
+						<button class="btn btn-default" ng-click="showoption()" ng-cloak>{{optionButton}}</button>
+						<button class="btn btn-default" type="button" onclick="location.reload();">Reset</button>
+						<button id="Link" class="btn btn-primary" type="button" ng-click="selectedItem.type=='json' ? openJSON(selectedItem.value) : openURLs(selectedItem.value);">Link</button>
+						<button id="Render" class="btn btn-primary" type="button" style="display: none;" ng-click="aframe_init();">Render</button>
+						<button id="Load" class="btn btn-primary" type="button" style="display: none;" ng-click="initial();">Load</button>
+						<button id="Play" class="btn btn-primary" style="display: none;" ng-click="play_all();">Play</button>
+						<button id="Pause" class="btn btn-primary" style="display: none;" ng-click="pause_all();">Pause</button>
+						<div id="option" style="display: none;">
+							<div class="options-item-title">ABR Strategy</div>
+							<div class="options-item-body">
+								<div class="sub-options-item-body">
+									<label data-toggle="tooltip" data-placement="right">
+										<input id="FOVRule" type="radio" autocomplete="off" checked="checked" ng-click="changeABRStrategy('FOVRule')">
+										FOVRule
+									</label>
+									<label data-toggle="tooltip" data-placement="right">
+										<input id="HighestBitrateRule" type="radio"  autocomplete="off" ng-click="changeABRStrategy('HighestBitrateRule')">
+										HighestBitrateRule
+									</label>
+									<label data-toggle="tooltip" data-placement="right">
+										<input id="FOVContentRule" type="radio" autocomplete="off"  ng-click="changeABRStrategy('FOVContentRule')">
+										FOVContentRule
+									</label>
+									<label data-toggle="tooltip" data-placement="right">
+										<input id="DefaultRule" type="radio" autocomplete="off" ng-click="changeABRStrategy('DefaultRule')">
+										DefaultRule
+									</label>
+								</div>
+							</div>
+						</div>
+					</span>
+				</div>
+			</div>
+
+			<div class="row">
+				<div id="videoContainer=" style="background-color:#3a3d42;width:1030px; height:530px;float:left;">
+						<iframe frameborder="0" scrolling="no" id="frame" onload="this.width=1000; this.height=500"></iframe>
+				</div>
+				<div class="tabs-section" style="width:calc(100% - 1050px);float:left;margin-left:20px;">
+					<!-- Tab panes -->
+					<div class="tab-content">
+							<div class="panel-body panel-stats" ng-cloak>
+								<!-- VIDEO STATS ITEMS-->
+								<div class="text-success">
+									<label class="text-primary" data-toggle="tooltip" data-placement="top">Normalized Time : </label> {{normalizedTime.toFixed(2)}} s
+								</div>
+
+								<div class="text-success">
+									<label class="text-primary" data-toggle="tooltip" data-placement="top">Total Throughput : </label> {{totalThroughput >= 8000000 ? (totalThroughput / 8000000).toFixed(2) : (totalThroughput / 8000).toFixed(0)}} {{totalThroughput >= 8000000 ? " MB/s" : " kB/s"}}
+								</div>
+
+								<div class="text-success">
+									<label class="text-primary" data-toggle="tooltip" data-placement="top">Total QOE : </label> {{totalQOE.toFixed(2)}}
+								</div>
+								<div class="text-success">
+									<label class="text-primary" data-toggle="tooltip" data-placement="top">Viewer's QOE : </label> {{viewerQOE.toFixed(2)}}
+								</div>
+								<div class="text-success">
+									<label class="text-primary" data-toggle="tooltip" data-placement="top">Content-based QOE : </label> {{contentQOE.toFixed(2)}}
+								</div>
+								<!-- <div class="text-success"> -->
+									<!-- <input id="videoDroppedFramesCB" type="checkbox" -->
+											<!-- ng-model="chartState.video.droppedFPS.selected" -->
+											<!-- ng-change="enableChartByName('droppedFPS', 'video')"> -->
+									<!-- <label class="text-primary" for="videoDroppedFramesCB" data-toggle="tooltip" -->
+											<!-- data-placement="top" -->
+											<!-- title="The absolute count of frames dropped by the rendering pipeline since play commenced">Dropped -->
+										<!-- Frames :</label> {{videoDroppedFrames}} -->
+								<!-- </div> -->
+						</div>
+					</div>
+				</div>
+				<div class="tabs-section" style="width:calc(100% - 1050px);float:left;margin-left:20px;margin-top: 10px">
+					<table class="table table-striped" style="border: 3px solid #136bfb;padding-left: 5px;padding-right: 5px;text-align: center;">
+						<thhead><tr>
+							<th style="text-align: center;">video_0</th>
+							<th style="text-align: center;">video_1</th>
+							<th style="text-align: center;">video_2</th>
+						</tr></thhead>
+						<tbody>
+						<tr>
+							<td><canvas id="capture_0" ng-style="mycanvas"></canvas></td>
+							<td><canvas id="capture_1" ng-style="mycanvas"></canvas></td>
+							<td><canvas id="capture_2" ng-style="mycanvas"></canvas></td>
+						</tr>
+
+						</tbody>
+						<thhead><tr>
+							<th style="text-align: center;">video_3</th>
+							<th style="text-align: center;">video_4</th>
+							<th style="text-align: center;">video_5</th>
+						</tr></thhead>
+						<tbody>
+						<tr>
+							<td><canvas id="capture_3" ng-style="mycanvas"></canvas></td>
+							<td><canvas id="capture_4" ng-style="mycanvas"></canvas></td>
+							<td><canvas id="capture_5" ng-style="mycanvas"></canvas></td>
+
+						</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+
+			<div class="row" style="background-color: #ffffff">
+				<div id="statstable" class="table-striped" style="margin: 15px;">
+
+					<table class="table table-striped" style="border: 3px solid #136bfb;padding-left: 5px;padding-right: 5px;text-align: center;">
+						<thead>
+						<tr>
+							<th style="text-align: center;">Player ID</th>
+							<th style="text-align: center;">Buffer Level</th>
+							<th style="text-align: center;">Average Throughput</th>
+							<th style="text-align: center;">Timeline</th>
+							<th style="text-align: center;">Quality</th>
+							<th style="text-align: center;">FOV Score</th>
+							<th style="text-align: center;">Content Score</th>
+							<th style="text-align: center;">Total loaded Time</th>
+							<th style="text-align: center;">Catchup State</th>
+						</tr>
+						</thead>
+						<tbody>
+						<tr ng-repeat="item in stats">
+							<td>{{item.playerid}}</td>
+							<td>{{item.bufferlevel}}</td>
+							<td>{{item.throughput}}</td>
+							<td>{{item.time}}</td>
+							<td>{{item.quality}}</td>
+							<td>{{item.fovscore}}</td>
+							<td>{{item.playerContentScore}}</td>
+							<td>{{item.totaltime}}</td>
+							<td>{{item.playerCatchUp}}</td>
+						</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+
+			<!-- CHARTING -->
+			<div class="chart-panel">
+				<div class="chart-controls" style="height: 50px;">
+					<div class="btn-group">
+						<button id="disable-chart-btn" class="btn btn-primary" ng-click="clearchartData_quality()" ng-cloak>Clear
+						</button>
+					</div>
+					<div id="legend-wrapper" class="legend-row">
+					</div>
+
+				</div>
+				<div id="chart-wrapper">
+					<span style="text-align:center;display:block;">VIDEO_QUALITY</span>
+					<div class="chart-inventory">
+						<flot dataset="chartData_quality" options="chartOptions"></flot>
+					</div>
+					<span style="text-align:center;display:block;">VIDEO_BUFFER</span>
+					<div class="chart-inventory">
+						<flot dataset="chartData_buffer" options="chartOptions"></flot>
+					</div>
+					<span style="text-align:center;display:block;">VIDEO_THROUGHPUT</span>
+					<div class="chart-inventory">
+						<flot dataset="chartData_throughput" options="chartOptions"></flot>
+					</div>
+				</div>
+			</div>
+
 		</div>
-        
 	</body>
 	
 </html>

@@ -38,6 +38,7 @@ function FOVContentRuleClass() {
 
         var info = abrController.getSettings().info;
         var streaming = abrController.getSettings().streaming;
+
         // Compute the bitrate according to FOV
         var priorite_FOV = computeFOVQualities(info);  // From 0 to 100
         // Compute the bitrate according to Content
@@ -53,24 +54,52 @@ function FOVContentRuleClass() {
             FOV_weight = 0.5;
             content_weight = 0.5;
         }
-        console.log([FOV_weight, " ", content_weight]);
-        // Compute the bitrate according to FOV and Content
+        // Compute the priorite according to FOV and Content
         var priorite_FOVContent = Math.min(FOV_weight * priorite_FOV + content_weight * priorite_Content, 100);
         $scope.playerFOVScore[info.count] = priorite_FOV;
         $scope.playerContentScore[info.count] = priorite_Content;
 
-        // Ask to switch to the bitrate according to FOV and Content
-        switchRequest.quality = 0;
-        switchRequest.reason = 'Always switching to the bitrate according to FOV and content';
-        switchRequest.priority = SwitchRequest.PRIORITY.STRONG;
-
+        // Mapping a bitrate from bitrate list using priorite
         const bitrateList = abrController.getBitrateList(mediaInfo);  // List of all the selectable bitrates (A - Z)
+        let switchQuality = 0;
+        let switchBitrate = bitrateList[switchQuality].bitrate;
         for (let i = bitrateList.length - 1; i >= 0; i--) {
             if (priorite_FOVContent >= (i * 100 / bitrateList.length)) {
-                switchRequest.quality = i;
+                switchQuality = i;
+                switchBitrate = bitrateList[switchQuality].bitrate;
                 break;
             }
         }
+
+        // // Make an adjustment according to the total throughput
+        // if ($scope.totalThroughput != 0 && $scope.playerBitrateList != []) {
+        //     // Compute the bitrate other tiles occupy (regardless of audio)
+        //     let currentBitrate = 0;
+        //     for (let i = 0; i < $scope.playerCount; i++) {
+        //         if (i != info.count) {
+        //             currentBitrate += $scope.playerBitrateList[i][$scope.playerQuality[i]].bitrate;
+        //         }
+        //     }
+        //     // Adjust the quality according to quality itself and the divation between available throughput and current switch bitrate
+        //     let availableThroughput = ($scope.totalThroughput - currentBitrate) * streaming.abr.bandwidthSafetyFactor;
+        //     let bitrateThreshold = currentBitrate / ($scope.playerCount - 1);
+        //     if (availableThroughput >= 0 && availableThroughput < switchBitrate) {
+        //         if (availableThroughput / switchBitrate >= 0.8) {
+        //             switchQuality = switchQuality;
+        //         } else if (availableThroughput / switchBitrate >= 0.5) {
+        //             switchQuality = Math.max(switchQuality - 1, 0);
+        //         } else {
+        //             switchQuality = 0;
+        //         }
+        //         switchBitrate = bitrateList[switchQuality].bitrate;
+        //     }
+        //     console.log([$scope.totalThroughput, currentBitrate, availableThroughput, switchBitrate]);
+        // }
+
+        // Ask to switch to the bitrate according to FOV and Content
+        switchRequest.quality = switchQuality;
+        switchRequest.reason = 'Always switching to the bitrate according to FOV and content';
+        switchRequest.priority = SwitchRequest.PRIORITY.STRONG;
 
         return switchRequest;
     }
@@ -253,7 +282,7 @@ function FOVContentRuleClass() {
             let curTileResult = $scope.ssresults[curTileIndexString];
             let AverageResult = $scope.ssresults['average'];
             if (curTileResult >= AverageResult) {
-                RankingResult = Math.min(RankingResult + $scope.content_curTile_bias, 1);
+                RankingResult = Math.min(RankingResult + content_curTile_bias, 1);
             } else {
                 RankingResult = Math.max(RankingResult - content_curTile_bias, 0);
             }

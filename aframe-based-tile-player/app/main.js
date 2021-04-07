@@ -1,68 +1,47 @@
-var app = angular.module('DashPlayer', ['angular-flot']); /* jshint ignoreMyThroughputRule:line */
+var app = angular.module('DashPlayer', ['angular-flot']);
 
 app.controller('DashController', ['$scope','$interval', function ($scope, $interval) {
-    $interval(function () {}, 100);
 
-    $scope.json = "http://localhost/CMPVP907/aframeVP907.json";
-    $scope.url = "";
-    $scope.type="LVOD";
+    $interval(function () {}, 1);
 
-    $scope.chartOptions = {
-        legend: {
-            labelBoxBorderColor: '#ffffff',
-            placement: 'outsideGrid',
-            container: '#legend-wrapper',
-            // labelFormatter: function (label, series) {
-            //     return '<div  style="cursor: pointer;" id="' + series.type + '.' + series.id + '" onclick="legendLabelClickHandler(this)">' + label + '</div>';
-            // }
-        },
-        series: {
-            lines: {
-                show: true,
-                lineWidth: 2,
-                shadowSize: 1,
-                steps: false,
-                fill: false,
-            },
-            points: {
-                radius: 4,
-                fill: true,
-                show: true
-            }
-        },
-        grid: {
-            clickable: false,
-            hoverable: false,
-            autoHighlight: true,
-            color: '#136bfb',
-            backgroundColor: '#ffffff'
-        },
-        axisLabels: {
-            position: 'left'
-        },
-        xaxis: {
-            tickFormatter: function tickFormatter(value) {
-                return $scope.players[0].convertToTimeCode(value);
-            },
-            tickDecimals: 0,
-            color: '#136bfb',
-            alignTicksWithAxis: 1
-        },
-        yaxis: {
-            min: 0,
-            tickLength: 0,
-            tickDecimals: 0,
-            color: '#136bfb',
-            position: 'right',
-            axisLabelPadding: 20,
-        },
-        yaxes: []
+    //// Global variables for storage
+    $scope.players = [];  // Container for players, which is easy for us to operate in them.
+    $scope.playerCount = 0;
+    $scope.buffer_empty_flag = [];  // Flags for players, showing whether the player is frozen or not.
+    $scope.lon = 90, $scope.lat = 0;  // Longitude and latitude in spherical coordinates.
+    $scope.pointerX, $scope.pointerY;  // Position of mouse click
+    $scope.contents = {};  // Contents from JSON file
+    $scope.startupTime = new Date().getTime();  // Initialize the startup time
+    $scope.totalQOE = 0;  // Compute the QoE considering all playing tiles
+    $scope.viewerQOE = 0;  // Compute the QoE considering the tiles in FOV
+    $scope.contentQOE = 0;  // Compute the QoE considering the tiles in FOV with contents as well
+
+    $scope.normalizedTime = 0;  // Set the fastest mediaplayer's timeline as the normalized time
+    $scope.totalThroughput = 0;  // Data from monitor
+    $scope.playerBufferLength = [];  // Data from monitor
+    $scope.playerAverageThroughput = [];  // Data from monitor
+    $scope.playerTime = [];  // Data from monitor
+    $scope.playerQuality = [];  // Data from monitor
+    $scope.playerFOVScore = [];  // Data from monitor
+    $scope.playerContentScore = [];  // Data from monitor
+    $scope.playerPastQuality = [];  // Data from monitor's playerQuality
+    $scope.playerCatchUp = [];  // Data from playback controller
+
+    $scope.playerBitrateList = [];  // Data from bitrate list
+    $scope.requestList = [];  // Data from all HTTPRequests
+    $scope.ssresults = {};  // Data from contents analytics CSV files
+
+    $scope.selectedItem = {  // Save the selected media source
+        type:"json",
+        value:"http://localhost/CMPVP907/aframeVP907.json"
     };
-    $scope.maxPointsToChart = 30;
-    $scope.chartData_quality = [];
-    $scope.chartData_buffer = [];
-    $scope.chartData_throughput = [];
-    $scope.chartState = {
+    $scope.optionButton = "Show Options";  // Save the state of option button
+    $scope.selectedRule = "FOVRule";  // Save the selected media source
+    $scope.stats = [];  // Save all the stats need to put on the charts
+    $scope.chartData_quality = [];  // Save the qualtiy data need to put on the charts
+    $scope.chartData_buffer = [];  // Save the buffer data need to put on the charts
+    $scope.chartData_throughput = [];  // Save the throughput data need to put on the charts
+    $scope.chartState = {  // Save the charts' states
         quality:{
             video_0: {
                 data: [], color: '#00CCBE', label: 'video_0'
@@ -134,6 +113,149 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
         }
     };
 
+
+    //// Global variables (flexible)
+    $scope.mycanvas = {  // [For capturing each frame] Set the width and height of the canvases
+        "width":"120",
+        "height":"120"
+    };
+    $scope.drawmycanvas = {  // [For capturing each frame] Set the width and height of the capture pictures
+        "width":"300",
+        "height":"150"
+    };
+    $scope.requestDuration = 3000;  // [For computing total throughput] Set the duration we consider (ms)
+    $scope.requestLayBack = 0;  // [For computing total throughput] Set the lay-back time for avoiding the on-going requests (ms)
+    $scope.rotateRatio = 0.1148;  // [For focusing FOV] Set the ratio of rotating when switching the angle of view
+    $scope.playerBufferToKeep = 6;  // [For initializing mediaplayers] Allows you to modify the buffer that is kept in source buffer in seconds
+    $scope.playerStableBufferTime = 6;  // [For initializing mediaplayers] The time that the internal buffer target will be set to post startup/seeks (NOT top quality)
+    $scope.playerBufferTimeAtTopQuality = 10;  // [For initializing mediaplayers] The time that the internal buffer target will be set to once playing the top quality
+    $scope.playerMinDrift = 0.02;  // [For initializing mediaplayers] The minimum latency deviation allowed
+    $scope.lambdaQOE = 1.0;  // [For computing QoE] Value of the quality switches constant
+    $scope.miuQOE = 4.3;  // [For computing QoE] Stall weight
+    $scope.omegaQOE = 4.3;  // [For computing QoE] Content weight
+    $scope.qQOE = 'log';  // [For computing QoE] a mapping function that translates the bitrate of chunk to the quality perceived by the user (Linear || Log)
+    $scope.a1QOE = 0.7;  // [For computing QoE] Influence of the quality of Zone 1
+    $scope.a2QOE = 0.3;  // [For computing QoE] Influence of the quality of Zone 2
+    $scope.a3QOE = 0.0;  // [For computing QoE] Influence of the quality of Zone 3
+    $scope.availableStreams = [  // [For setting up the media source] All the available preset media sources
+        {
+            name:"LVOD",
+            json:"http://localhost/CMPVP907/aframeVP907.json",
+        },
+        {
+            name:"SVOD",
+            json:"http://222.20.77.111/processed/CMPVP907/aframeVP907.json",
+        },
+        {
+            name:"LIVE",
+            json:"http://222.20.77.111/dash/default.json",
+        },
+        {
+            name:"BUNNY",
+            url:"https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd"
+        }
+    ];
+    $scope.rules = ["FOVRule", "HighestBitrateRule", "FOVContentRule", "DefaultRule"];  // [For seeting the ABR rule] All the available preset ABR rules
+    $scope.chartOptions = {  // [For printing the chart] Set up the style of the charts
+        legend: {
+            labelBoxBorderColor: '#ffffff',
+            placement: 'outsideGrid',
+            container: '#legend-wrapper',
+            // labelFormatter: function (label, series) {
+            //     return '<div  style="cursor: pointer;" id="' + series.type + '.' + series.id + '" onclick="legendLabelClickHandler(this)">' + label + '</div>';
+            // }
+        },
+        series: {
+            lines: {
+                show: true,
+                lineWidth: 2,
+                shadowSize: 1,
+                steps: false,
+                fill: false,
+            },
+            points: {
+                radius: 4,
+                fill: true,
+                show: true
+            }
+        },
+        grid: {
+            clickable: false,
+            hoverable: false,
+            autoHighlight: true,
+            color: '#136bfb',
+            backgroundColor: '#ffffff'
+        },
+        axisLabels: {
+            position: 'left'
+        },
+        xaxis: {
+            tickFormatter: function tickFormatter(value) {
+                return $scope.players[0].convertToTimeCode(value);
+            },
+            tickDecimals: 0,
+            color: '#136bfb',
+            alignTicksWithAxis: 1
+        },
+        yaxis: {
+            min: 0,
+            tickLength: 0,
+            tickDecimals: 0,
+            color: '#136bfb',
+            position: 'right',
+            axisLabelPadding: 20,
+        },
+        yaxes: []
+    };
+    $scope.maxPointsToChart = 30;  // [For printing the chart] Set the maximum of the points printed on the charts
+    $scope.IntervalOfSetNormalizedTime = 10;  // [For setting interval] Set the fastest mediaplayer's timeline as the normalized time
+    $scope.IntervalOfComputetotalThroughput = 1000;  // [For setting interval] Compute total throughput according to recent HTTP requests
+    $scope.IntervalOfComputeQoE = 1000;  // [For setting interval] Compute QoE
+    $scope.IntervalOfUpdateStats = 100;  // [For setting interval] Show the data in monitor
+    $scope.IntervalOfUpdateFigures = 1000;  // [For setting interval] Show the data in figures
+    $scope.IntervalOfCaptures = 500;  // [For setting interval] Capture the pictures from mediaplayers
+
+
+    //// Variables and functions for UI and options
+    // For setting up the media source
+    $scope.setStream = function (item) {
+        if(item.json){
+            $scope.selectedItem.type = "json";
+            $scope.selectedItem.value = item.json;
+        }else{
+            $scope.selectedItem.type = "url";
+            $scope.selectedItem.value = item.url;
+        }
+    };
+    $scope.changeStream = function () {
+        console.log($scope.selectedItem.value.slice(-4));
+        if($scope.selectedItem.value.length > 5 && $scope.selectedItem.value.slice(-4) == "json"){
+            $scope.selectedItem.type = "json";
+        }else{
+            $scope.selectedItem.type = "url";
+        }
+    };
+
+    // For setting up the ABR rule
+    $scope.showoption = function () {
+        if($scope.optionButton == "Show Options"){
+            document.getElementById('option').style = "background-color: #e2e1e4; z-index: 1000; position: absolute;";
+            $scope.optionButton = "Hide Options";
+        }else{
+            document.getElementById('option').style = "display: none;";
+            $scope.optionButton = "Show Options";
+        }
+    };
+    $scope.changeABRStrategy = function (strategy) {
+        for(let i = 0; i < $scope.rules.length; i++){
+            let d = document.getElementById($scope.rules[i]);
+            d.checked = false;
+        }
+        document.getElementById(strategy).checked = true;
+        $scope.selectedRule = strategy;
+    };
+
+    // For printing the charts
     $scope.pushData = function (id, type) {
         switch(type) {
             case "quality":
@@ -207,53 +329,8 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
     };
 
 
-    //// Global variables for storage
-    $scope.players = [];  // Container for players, which is easy for us to operate in them.
-    $scope.playerCount = 0;
-    $scope.buffer_empty_flag = [];  // Flags for players, showing whether the player is frozen or not.
-    $scope.lon = 90, $scope.lat = 0;  // Longitude and latitude in spherical coordinates.
-    $scope.pointerX, $scope.pointerY;  // Position of mouse click
-    $scope.contents = {};  // Contents from JSON file
-    $scope.startupTime = new Date().getTime();  // Initialize the startup time
-    $scope.totalQOE = 0;  // Compute the QoE considering all playing tiles
-    $scope.viewerQOE = 0;  // Compute the QoE considering the tiles in FOV
-    $scope.contentQOE = 0;  // Compute the QoE considering the tiles in FOV with contents as well
-
-    $scope.normalizedTime = 0;  // Set the fastest mediaplayer's timeline as the normalized time
-    $scope.totalThroughput = 0;  // Data from monitor
-    $scope.playerBufferLength = [];  // Data from monitor
-    $scope.playerAverageThroughput = [];  // Data from monitor
-    $scope.playerTime = [];  // Data from monitor
-    $scope.playerQuality = [];  // Data from monitor
-    $scope.playerFOVScore = [];  // Data from monitor
-    $scope.playerContentScore = [];  // Data from monitor
-    $scope.playerPastQuality = [];  // Data from monitor's playerQuality
-    $scope.playerCatchUp = [];  // Data from playback controller
-
-    $scope.playerBitrateList = [];  // Data from bitrate list
-    $scope.requestList = [];  // Data from all HTTPRequests
-    $scope.ssresults = {};  // Data from contents analytics CSV files
-
-    //// Global variables (flexible)
-    $scope.captureWidth = 128;  // [For capturing each frame] Set the width of the capture pictures
-    $scope.captureHeight = 128;  // [For capturing each frame] Set the height of the capture pictures
-    $scope.requestDuration = 3000;  // [For computing total throughput] Set the duration we consider (ms)
-    $scope.requestLayBack = 0;  // [For computing total throughput] Set the lay-back time for avoiding the on-going requests (ms)
-    $scope.rotateRatio = 0.1148;  // [For focusing FOV] Set the ratio of rotating when switching the angle of view
-    $scope.playerBufferToKeep = 6;  // [For initializing mediaplayers] Allows you to modify the buffer that is kept in source buffer in seconds
-    $scope.playerStableBufferTime = 6;  // [For initializing mediaplayers] The time that the internal buffer target will be set to post startup/seeks (NOT top quality)
-    $scope.playerBufferTimeAtTopQuality = 10;  // [For initializing mediaplayers] The time that the internal buffer target will be set to once playing the top quality
-    $scope.playerMinDrift = 0.02;  // [For initializing mediaplayers] The minimum latency deviation allowed
-    $scope.lambdaQOE = 1.0;  // [For computing QoE] Value of the quality switches constant
-    $scope.miuQOE = 4.3;  // [For computing QoE] Stall weight
-    $scope.omegaQOE = 4.3;  // [For computing QoE] Content weight
-    $scope.qQOE = 'log';  // [For computing QoE] a mapping function that translates the bitrate of chunk to the quality perceived by the user (Linear || Log)
-    $scope.a1QOE = 0.7;  // [For computing QoE] Influence of the quality of Zone 1
-    $scope.a2QOE = 0.3;  // [For computing QoE] Influence of the quality of Zone 2
-    $scope.a3QOE = 0.0;  // [For computing QoE] Influence of the quality of Zone 3
-
-
     //// Loading sources
+    // Get contents through HTTP requests
     function getContents(url, callback) {
         var xhr = new XMLHttpRequest();
         xhr.open("GET", url, true);
@@ -271,15 +348,13 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
         $scope.contents = {};
         getContents(url, function() {
             $scope.contents = JSON.parse(this.responseText);
-            if ($scope.contents.ssresults != "") {
+            if ($scope.contents.ssresults && $scope.contents.ssresults != "") {
                 getContents($scope.contents.baseUrl + $scope.contents.ssresults, function() {
                     $scope.ssresults = JSON.parse(this.responseText);
                 });
             }
-            document.getElementById('Reset').style = "display: inline;";
             document.getElementById('Link').style = "display: none;";
             document.getElementById('Render').style = "display: inline;";
-            document.getElementById('json').value += " (Loaded!)";
         });
     };
 
@@ -296,11 +371,23 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                     }
                 }
             }
-            document.getElementById('Reset').style = "display: inline;";
             document.getElementById('Link').style = "display: none;";
             document.getElementById('Render').style = "display: inline;";
-            document.getElementById('url').value += " (Loaded!)";
         });
+    }
+
+
+    //// Initialize the aframe page
+    // Open the iframe according to the number of faces, rows and cols
+    $scope.aframe_init = function() {
+        if ($scope.contents == {}) {
+            return;
+        }
+        document.getElementById( 'frame' ).src = "./" + $scope.contents.face + "_" + $scope.contents.row + "_" + $scope.contents.col + ".html";
+        $scope.lon = 90;
+        $scope.lat = 0;
+        document.getElementById('Render').style = "display: none;";
+        document.getElementById('Load').style = "display: inline;";
     }
 
 
@@ -315,7 +402,9 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             $scope.players[$scope.playerCount].pause();
             console.log("Audio pauses.");
         }
-    }
+        document.getElementById('Pause').style = "display: none;";
+        document.getElementById('Play').style = "display: inline;";
+    };
 
     // Play in all the players
     $scope.play_all = function() {
@@ -327,7 +416,9 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             $scope.players[$scope.playerCount].play();
             console.log("Audio plays.");
         }
-    }
+        document.getElementById('Play').style = "display: none;";
+        document.getElementById('Pause').style = "display: inline;";
+    };
 
     // Triggered when any player's buffer is empty, which to stop all the players and wait for rebuffering.
     function buffer_empty_event(e) {
@@ -356,9 +447,8 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
         $scope.initChartingByMediaType('quality');
         $scope.initChartingByMediaType('buffer');
         $scope.initChartingByMediaType('throughput');
-        $scope.sessionStartTime = new Date().getTime() / 1000;
-
         let video, url;
+
         // Video part
         for (let i = 0; i < $scope.contents.face; i++) {
             for (let j = 0; j < $scope.contents.row; j++) {
@@ -398,10 +488,9 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                             }
                         }
                     });
+
                     // Add my custom quality switch rule, look at [].js to know more about the structure of a custom rule
-                    let index = document.getElementById("rule").selectedIndex;
-                    let selectedRule = document.getElementById("rule").options[index].text;
-                    switch (selectedRule) {
+                    switch ($scope.selectedRule) {
                         case "FOVRule":
                             $scope.players[$scope.playerCount].addABRCustomRule('qualitySwitchRules', 'FOVRule', FOVRule);
                             break;
@@ -413,7 +502,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                             break;
                         case "FOVContentRule":
                             $scope.players[$scope.playerCount].addABRCustomRule('qualitySwitchRules', 'FOVContentRule', FOVContentRule);
-                            break;									
+                            break;
                         default:
                             $scope.players[$scope.playerCount].updateSettings({
                                 'streaming': {
@@ -444,6 +533,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                 }
             }
         }
+
         // Audio part
         if ($scope.contents.audio && $scope.contents.audio != "") {
             var audio = document.getElementById( "frame" ).contentWindow.document.querySelector("#audio");
@@ -471,35 +561,27 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             $scope.playerQuality[$scope.playerCount] = $scope.players[$scope.playerCount].getQualityFor("audio");
             $scope.playerCatchUp[$scope.playerCount] = false;
         }
-        // Get video captures
-        for (let i = 0; i < $scope.playerCount; i++) {
-            let canvas = document.createElement( "canvas" );
-            canvas.id = "capture_" + i;
-            canvas.width = $scope.captureWidth;
-            canvas.height = $scope.captureHeight;
-            document.getElementById("captures").appendChild(canvas);
-        }
+
         $scope.startupTime = new Date().getTime();
         // Set the fastest mediaplayer's timeline as the normalized time
-        setInterval(setNormalizedTime, 10);
+        setInterval(setNormalizedTime, $scope.IntervalOfSetNormalizedTime);
         // Compute total throughput according to recent HTTP requests
-        setInterval(computetotalThroughput, 1000);
+        setInterval(computetotalThroughput, $scope.IntervalOfComputetotalThroughput);
         // Compute QoE
-        setInterval(computeQoE, 1000);
+        setInterval(computeQoE, $scope.IntervalOfComputeQoE);
         // Show the data in monitor
-        setInterval(updateStats, 100);
+        setInterval(updateStats, $scope.IntervalOfUpdateStats);
         // Show the data in figures
-        setInterval(updateFigures, 1000);
+        setInterval(updateFigures, $scope.IntervalOfUpdateFigures);
         // Capture the pictures from mediaplayers
         setInterval(function () {
             for (let i = 0; i < $scope.playerCount; i++) {
-                document.getElementById("capture_" + i).getContext('2d').drawImage(document.getElementById( "frame" ).contentWindow.document.querySelector("#" + "video_" + i), 0, 0, $scope.captureWidth, $scope.captureHeight);
+                document.getElementById("capture_" + i).getContext('2d').drawImage(document.getElementById( "frame" ).contentWindow.document.querySelector("#" + "video_" + i), 0, 0, $scope.drawmycanvas.width, $scope.drawmycanvas.height);
                 // img.src = canvas.toDataURL("image/png");
             }
-        }, 500);
+        }, $scope.IntervalOfCaptures);
         document.getElementById('Load').style = "display: none;";
         document.getElementById('Play').style = "display: inline;";
-        document.getElementById('Pause').style = "display: inline;";
     };
 
     // Set the fastest mediaplayer's timeline as the normalized time
@@ -556,10 +638,9 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
         if (curTime - $scope.requestDuration < requestTimeIndex) {
             TotalTimeInAnInterval -= (requestTimeIndex - (curTime - $scope.requestDuration));
         }
-        if (TotalTimeInAnInterval == 0) {
-            TotalTimeInAnInterval = 1;
+        if (TotalDataInAnInterval != 0 && TotalTimeInAnInterval != 0) {
+            $scope.totalThroughput = Math.round((8 * TotalDataInAnInterval) / (TotalTimeInAnInterval / 1000));  // bps
         }
-        $scope.totalThroughput = Math.round((8 * TotalDataInAnInterval) / (TotalTimeInAnInterval / 1000));  // bps
     }
 
     // Compute QoE
@@ -591,15 +672,14 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             let view_x = Math.sin(view_theta) * Math.sin(view_phi);
             let view_y = Math.cos(view_theta);
             let divation = Math.acos((tile_z * view_z + tile_x * view_x + tile_y * view_y) / (Math.sqrt(tile_z * tile_z + tile_x * tile_x + tile_y * tile_y) * Math.sqrt(view_z * view_z + view_x * view_x + view_y * view_y))) * (180 / Math.PI);
-            // console.log([i, playerSettings, r, tile_theta, tile_phi, view_theta, view_phi, tile_z, tile_x, tile_y, view_z, view_x, view_y, divation]);
             switch ($scope.qQOE) {
                 case 'linear':
-                    pretotalQOE = pretotalQOE + $scope.playerBitrateList[i][$scope.playerQuality[i]].bitrate - $scope.lambdaQOE * Math.abs($scope.playerBitrateList[i][$scope.playerQuality[i]].bitrate - $scope.playerBitrateList[i][$scope.playerPastQuality[i]].bitrate);
-                    previewerQOE = previewerQOE + (divation < 61 ? $scope.a1QOE : divation < 121 ? $scope.a2QOE : $scope.a3QOE) * ($scope.playerBitrateList[i][$scope.playerQuality[i]].bitrate - $scope.lambdaQOE * Math.abs($scope.playerBitrateList[i][$scope.playerQuality[i]].bitrate - $scope.playerBitrateList[i][$scope.playerPastQuality[i]].bitrate));
+                    pretotalQOE = pretotalQOE + ($scope.playerBitrateList[i][$scope.playerQuality[i]].bitrate - $scope.playerBitrateList[i][0].bitrate) - $scope.lambdaQOE * Math.abs($scope.playerBitrateList[i][$scope.playerQuality[i]].bitrate - $scope.playerBitrateList[i][$scope.playerPastQuality[i]].bitrate);
+                    previewerQOE = previewerQOE + (divation < 61 ? $scope.a1QOE : divation < 121 ? $scope.a2QOE : $scope.a3QOE) * (($scope.playerBitrateList[i][$scope.playerQuality[i]].bitrate - $scope.playerBitrateList[i][0].bitrate) - $scope.lambdaQOE * Math.abs($scope.playerBitrateList[i][$scope.playerQuality[i]].bitrate - $scope.playerBitrateList[i][$scope.playerPastQuality[i]].bitrate));
                     break;
                 case 'log':
-                    pretotalQOE = pretotalQOE + Math.log($scope.playerBitrateList[i][$scope.playerQuality[i]].bitrate + 1) - $scope.lambdaQOE * Math.abs(Math.log($scope.playerBitrateList[i][$scope.playerQuality[i]].bitrate + 1) - Math.log($scope.playerBitrateList[i][$scope.playerPastQuality[i]].bitrate + 1));
-                    previewerQOE = previewerQOE + (divation < 61 ? $scope.a1QOE : divation < 121 ? $scope.a2QOE : $scope.a3QOE) * (Math.log($scope.playerBitrateList[i][$scope.playerQuality[i]].bitrate + 1) - $scope.lambdaQOE * Math.abs(Math.log($scope.playerBitrateList[i][$scope.playerQuality[i]].bitrate + 1) - Math.log($scope.playerBitrateList[i][$scope.playerPastQuality[i]].bitrate + 1)));
+                    pretotalQOE = pretotalQOE + Math.log(($scope.playerBitrateList[i][$scope.playerQuality[i]].bitrate - $scope.playerBitrateList[i][0].bitrate) + 1) - $scope.lambdaQOE * Math.abs(Math.log($scope.playerBitrateList[i][$scope.playerQuality[i]].bitrate + 1) - Math.log($scope.playerBitrateList[i][$scope.playerPastQuality[i]].bitrate + 1));
+                    previewerQOE = previewerQOE + (divation < 61 ? $scope.a1QOE : divation < 121 ? $scope.a2QOE : $scope.a3QOE) * (Math.log(($scope.playerBitrateList[i][$scope.playerQuality[i]].bitrate - $scope.playerBitrateList[i][0].bitrate) + 1) - $scope.lambdaQOE * Math.abs(Math.log($scope.playerBitrateList[i][$scope.playerQuality[i]].bitrate + 1) - Math.log($scope.playerBitrateList[i][$scope.playerPastQuality[i]].bitrate + 1)));
                     break;
                 default:
                     break;
@@ -613,128 +693,47 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
 
     // Show the data in monitor
     function updateStats() {
-        let tablecontent = "";
-        tablecontent += "<table><thead><tr><th>Normalized Time</th><th>Total Throughput</th><th>Total QoE</th><th>Viewer's QoE</th><th>Content-based QoE</th></tr></thead><tbody><tr><td>";
-        tablecontent += $scope.normalizedTime.toFixed(2);
-        tablecontent += " s</td><td>";
-        tablecontent += $scope.totalThroughput >= 8000000 ? ($scope.totalThroughput / 8000000).toFixed(2) : ($scope.totalThroughput / 8000).toFixed(0);
-        tablecontent += $scope.totalThroughput >= 8000000 ? " MB/s" : " kB/s";
-        tablecontent += "</td><td>";
-        tablecontent += $scope.totalQOE.toFixed(2);
-        tablecontent += "</td><td>";
-        tablecontent += $scope.viewerQOE.toFixed(2);
-        tablecontent += "</td><td>";
-        tablecontent += $scope.contentQOE.toFixed(2);
-        tablecontent += "</td></tr></tbody></table><br>";
-        tablecontent += "<table><thead><tr><th>Player ID</th><th>Buffer Level</th><th>Average Throughput</th><th>Timeline</th><th>Quality</th><th>FOV Score</th><th>Content Score</th><th>Total loaded Time</th><th>Catchup State</th></tr></thead><tbody>";
-        for (let i = 0; i < $scope.playerCount; i++) {
-            if ($scope.playerBitrateList[i].length == 0) {
-                $scope.playerBitrateList[i] = $scope.players[i].getBitrateInfoListFor("video");
+        $scope.stats.splice(0, $scope.stats.length);
+        for (let i = 0; i <= $scope.playerCount; i++) {
+            if(i == $scope.playerCount) {
+                if ($scope.contents.audio && $scope.contents.audio != "") {
+                    $scope.playerBufferLength[i] = $scope.players[i].getBufferLength("audio");
+                    $scope.playerAverageThroughput[i] = $scope.players[i].getAverageThroughput("audio");
+                    $scope.playerTime[i] = $scope.players[i].time();
+                    $scope.playerQuality[i] = $scope.players[i].getQualityFor("audio");
+                    $scope.stats.push({
+                        playerid : "audio",
+                        bufferlevel : $scope.playerBufferLength[i].toFixed(2) + " s",
+                        throughput : $scope.playerAverageThroughput[i].toFixed(0)+ " bps",
+                        time : $scope.playerTime[i].toFixed(2) + " s",
+                        quality : $scope.players[i].getQualityFor("audio").toFixed(0),
+                        fovscore : NaN,
+                        playerContentScore : NaN,
+                        totaltime : ($scope.playerBufferLength[i] + $scope.playerTime[i]).toFixed(2) + " s",
+                        playerCatchUp : ($scope.playerCatchUp[$scope.i] ? "Catching up" : "Synchronizing")
+                    });
+                }
+            } else {
+                if (i < $scope.playerCount && $scope.playerBitrateList[i].length == 0) {
+                    $scope.playerBitrateList[i] = $scope.players[i].getBitrateInfoListFor("video");
+                }
+                $scope.playerBufferLength[i] = $scope.players[i].getBufferLength("video");
+                $scope.playerAverageThroughput[i] = $scope.players[i].getAverageThroughput("video");
+                $scope.playerTime[i] = $scope.players[i].time();
+                $scope.playerQuality[i] = $scope.players[i].getQualityFor("video");
+                $scope.stats.push({
+                    playerid : "video_" + i,
+                    bufferlevel : $scope.playerBufferLength[i].toFixed(2) + " s",
+                    throughput : $scope.playerAverageThroughput[i].toFixed(0)+ " bps",
+                    time : $scope.playerTime[i].toFixed(2) + " s",
+                    quality : $scope.playerQuality[i].toFixed(0),
+                    fovscore : $scope.playerFOVScore[i].toFixed(0),
+                    playerContentScore : $scope.playerContentScore[i].toFixed(0),
+                    totaltime : ($scope.playerBufferLength[i] + $scope.playerTime[i]).toFixed(2) + " s",
+                    playerCatchUp : ($scope.playerCatchUp[$scope.i] ? "Catching up" : "Synchronizing")
+                });
             }
-            $scope.playerBufferLength[i] = $scope.players[i].getBufferLength();
-            $scope.playerAverageThroughput[i] = $scope.players[i].getAverageThroughput("video");
-            $scope.playerTime[i] = $scope.players[i].time();
-            $scope.playerQuality[i] = $scope.players[i].getQualityFor("video");
-            tablecontent += "<tr>";
-            tablecontent += ("<td>video_" + i + "</td>" );
-            tablecontent += ("<td>" + $scope.playerBufferLength[i].toFixed(2) + " s</td>");
-            tablecontent += ("<td>" + $scope.playerAverageThroughput[i].toFixed(0) + " bps</td>");
-            tablecontent += ("<td>" + $scope.playerTime[i].toFixed(2) + " s</td>");
-            tablecontent += ("<td>" + $scope.playerQuality[i].toFixed(0) + "</td>");
-            tablecontent += ("<td>" + $scope.playerFOVScore[i].toFixed(0) + "</td>");
-            tablecontent += ("<td>" + $scope.playerContentScore[i].toFixed(0) + "</td>");
-            tablecontent += ("<td>" + ($scope.playerBufferLength[i] + $scope.playerTime[i]).toFixed(2) + " s</td>");
-            tablecontent += ("<td>" + ($scope.playerCatchUp[$scope.playerCount] ? "Catching up" : "Synchronizing") + "</td>");
-            tablecontent += "</tr>";
         }
-        if ($scope.contents.audio && $scope.contents.audio != "") {
-            $scope.playerBufferLength[$scope.playerCount] = $scope.players[$scope.playerCount].getBufferLength();
-            $scope.playerAverageThroughput[$scope.playerCount] = $scope.players[$scope.playerCount].getAverageThroughput("audio");
-            $scope.playerTime[$scope.playerCount] = $scope.players[$scope.playerCount].time();
-            $scope.playerQuality[$scope.playerCount] = $scope.players[$scope.playerCount].getQualityFor("audio");
-            tablecontent += "<tr>";
-            tablecontent += ("<td>audio</td>" );
-            tablecontent += ("<td>" + $scope.playerBufferLength[$scope.playerCount].toFixed(2) + " s</td>");
-            tablecontent += ("<td>" + $scope.playerAverageThroughput[$scope.playerCount].toFixed(0) + " bps</td>");
-            tablecontent += ("<td>" + $scope.playerTime[$scope.playerCount].toFixed(2) + " s</td>");
-            tablecontent += ("<td>" + $scope.playerQuality[$scope.playerCount].toFixed(0) + "</td>");
-            tablecontent += ("<td></td>");
-            tablecontent += ("<td></td>");
-            tablecontent += ("<td>" + ($scope.playerBufferLength[$scope.playerCount] + $scope.playerTime[$scope.playerCount]).toFixed(2) + " s</td>");
-            tablecontent += ("<td>" + ($scope.playerCatchUp[$scope.playerCount] ? "Catching up" : "Synchronizing") + "</td>");
-            tablecontent += "</tr>";
-        }
-        tablecontent += "</tbody></table>";
-        document.getElementById("statstable").innerHTML = tablecontent;
-        // document.querySelector("#stats").innerHTML = "---STATS MONITOR---<br><br><br>";
-        // document.querySelector("#stats").innerHTML += "Normalized time: ";
-        // document.querySelector("#stats").innerHTML += $scope.normalizedTime.toFixed(2);
-        // document.querySelector("#stats").innerHTML += " s<br>";
-        // document.querySelector("#stats").innerHTML += "Total Throughput: ";
-        // document.querySelector("#stats").innerHTML += $scope.totalThroughput >= 8000000 ? ($scope.totalThroughput / 8000000).toFixed(2) : ($scope.totalThroughput / 8000).toFixed(0);  // MB/s or kB/s
-        // document.querySelector("#stats").innerHTML += $scope.totalThroughput >= 8000000 ? " MB/s<br>" : " kB/s<br>";
-        // document.querySelector("#stats").innerHTML += "Total QoE: ";
-        // document.querySelector("#stats").innerHTML += $scope.totalQOE.toFixed(2);
-        // document.querySelector("#stats").innerHTML += "<br>"
-        // document.querySelector("#stats").innerHTML += "Viewer's QoE: ";
-        // document.querySelector("#stats").innerHTML += $scope.viewerQOE.toFixed(2);
-        // document.querySelector("#stats").innerHTML += "<br>"
-        // document.querySelector("#stats").innerHTML += "Content-based QoE: ";
-        // document.querySelector("#stats").innerHTML += $scope.contentQOE.toFixed(2);
-        // document.querySelector("#stats").innerHTML += "<br><br>"
-        // for (let i = 0; i < $scope.playerCount; i++) {
-        //     if ($scope.playerBitrateList[i].length == 0) {
-        //         $scope.playerBitrateList[i] = $scope.players[i].getBitrateInfoListFor("video");
-        //     }
-        //     $scope.playerBufferLength[i] = $scope.players[i].getBufferLength();
-        //     $scope.playerAverageThroughput[i] = $scope.players[i].getAverageThroughput("video");
-        //     $scope.playerTime[i] = $scope.players[i].time();
-        //     $scope.playerQuality[i] = $scope.players[i].getQualityFor("video");
-        //     document.querySelector("#stats").innerHTML += ( "Video_" + i + ":<br>" );
-        //     document.querySelector("#stats").innerHTML += "Buffer level ";
-        //     document.querySelector("#stats").innerHTML += $scope.playerBufferLength[i].toFixed(2);
-        //     document.querySelector("#stats").innerHTML += " s<br>";
-        //     document.querySelector("#stats").innerHTML += "Average Throughput ";
-        //     document.querySelector("#stats").innerHTML += $scope.playerAverageThroughput[i].toFixed(0);
-        //     document.querySelector("#stats").innerHTML += " bps<br>";
-        //     document.querySelector("#stats").innerHTML += "Timeline ";
-        //     document.querySelector("#stats").innerHTML += $scope.playerTime[i].toFixed(2);
-        //     document.querySelector("#stats").innerHTML += " s<br>";
-        //     document.querySelector("#stats").innerHTML += "Quality ";
-        //     document.querySelector("#stats").innerHTML += $scope.playerQuality[i].toFixed(0);
-        //     document.querySelector("#stats").innerHTML += "<br>";
-        //     document.querySelector("#stats").innerHTML += "FOV Score ";
-        //     document.querySelector("#stats").innerHTML += $scope.playerFOVScore[i].toFixed(0);
-        //     document.querySelector("#stats").innerHTML += "<br>";
-        //     document.querySelector("#stats").innerHTML += "Content Score ";
-        //     document.querySelector("#stats").innerHTML += $scope.playerContentScore[i].toFixed(0);
-        //     document.querySelector("#stats").innerHTML += "<br>";
-        //     document.querySelector("#stats").innerHTML += "Total loaded time: ";
-        //     document.querySelector("#stats").innerHTML += ($scope.playerBufferLength[i] + $scope.playerTime[i]).toFixed(2);
-        //     document.querySelector("#stats").innerHTML += " s<br><br>";
-        // }
-        // if ($scope.contents.audio && $scope.contents.audio != "") {
-        //     $scope.playerBufferLength[$scope.playerCount] = $scope.players[$scope.playerCount].getBufferLength();
-        //     $scope.playerAverageThroughput[$scope.playerCount] = $scope.players[$scope.playerCount].getAverageThroughput("audio");
-        //     $scope.playerTime[$scope.playerCount] = $scope.players[$scope.playerCount].time();
-        //     $scope.playerQuality[$scope.playerCount] = $scope.players[$scope.playerCount].getQualityFor("audio");
-        //     document.querySelector("#stats").innerHTML += ( "Audio:<br>" );
-        //     document.querySelector("#stats").innerHTML += "Buffer level ";
-        //     document.querySelector("#stats").innerHTML += $scope.playerBufferLength[$scope.playerCount].toFixed(2);
-        //     document.querySelector("#stats").innerHTML += " s<br>";
-        //     document.querySelector("#stats").innerHTML += "Average Throughput ";
-        //     document.querySelector("#stats").innerHTML += $scope.playerAverageThroughput[$scope.playerCount].toFixed(0);
-        //     document.querySelector("#stats").innerHTML += " bps<br>";
-        //     document.querySelector("#stats").innerHTML += "Timeline ";
-        //     document.querySelector("#stats").innerHTML += $scope.playerTime[$scope.playerCount].toFixed(2);
-        //     document.querySelector("#stats").innerHTML += " s<br>";
-        //     document.querySelector("#stats").innerHTML += "Quality ";
-        //     document.querySelector("#stats").innerHTML += $scope.playerQuality[$scope.playerCount].toFixed(0);
-        //     document.querySelector("#stats").innerHTML += "<br>";
-        //     document.querySelector("#stats").innerHTML += "Total loaded time: ";
-        //     document.querySelector("#stats").innerHTML += ($scope.playerBufferLength[$scope.playerCount] + $scope.playerTime[$scope.playerCount]).toFixed(2);
-        //     document.querySelector("#stats").innerHTML += " s<br><br>";
-        // }
     }
 
     // Show the data in figures
@@ -752,52 +751,9 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             $scope.plotPoint("audio", 'throughput', $scope.playerAverageThroughput[$scope.playerCount], time);
         }
     }
-
     function getTimeForPlot() {
         let now = new Date().getTime() / 1000;
-        return Math.max(now - $scope.sessionStartTime, 0);
-    }
-
-
-    //// Operations connected to buttons
-    // Open the iframe according to the number of faces, rows and cols
-    $scope.aframe_init = function() {
-        if ($scope.contents == {}) {
-            return;
-        }
-        document.getElementById( 'frame' ).src = "./" + $scope.contents.face + "_" + $scope.contents.row + "_" + $scope.contents.col + ".html";
-        $scope.lon = 90;
-        $scope.lat = 0;
-        document.getElementById('Render').style = "display: none;";
-        document.getElementById('Load').style = "display: inline;";
-    }
-
-    // Switch the source automatically according to the situation
-    $scope.VOD_LIVE = function(type) {
-        // let index = document.getElementById("type").selectedIndex;
-        // let selectedRule = document.getElementById("type").options[index].text;
-        switch (type) {
-            case "LVOD":
-                $scope.json = "http://localhost/CMPVP907/aframeVP907.json";
-                $scope.url = "";
-                break;
-            case "SVOD":
-                $scope.json = "http://222.20.77.111/processed/CMPVP907/aframeVP907.json";
-                $scope.url = "";
-                break;
-            case "LIVE":
-                $scope.json = "http://222.20.77.111/dash/default.json";
-                $scope.url = "";
-                break;
-            case "BUNNY":
-                $scope.json = "";
-                $scope.url = "https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd";
-                break;
-            default:
-                $scope.json = "";
-                $scope.url = "";
-                break;
-        }
+        return Math.max(now - $scope.startupTime / 1000, 0);
     }
 
 
@@ -837,10 +793,3 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
 
 
 }]);
-// function legendLabelClickHandler(obj) { /* jshint ignore:line */
-//     var scope = angular.element($('body')).scope(); /* jshint ignore:line */
-//     var id = obj.id.split('.');
-//     var target = scope.chartState[id[0]][id[1]];
-//     target.selected = !target.selected;
-//     scope.pushData(id[1], id[0]);
-// }
