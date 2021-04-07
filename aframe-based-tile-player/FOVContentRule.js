@@ -71,30 +71,23 @@ function FOVContentRuleClass() {
             }
         }
 
-        // // Make an adjustment according to the total throughput
-        // if ($scope.totalThroughput != 0 && $scope.playerBitrateList != []) {
-        //     // Compute the bitrate other tiles occupy (regardless of audio)
-        //     let currentBitrate = 0;
-        //     for (let i = 0; i < $scope.playerCount; i++) {
-        //         if (i != info.count) {
-        //             currentBitrate += $scope.playerBitrateList[i][$scope.playerQuality[i]].bitrate;
-        //         }
-        //     }
-        //     // Adjust the quality according to quality itself and the divation between available throughput and current switch bitrate
-        //     let availableThroughput = ($scope.totalThroughput - currentBitrate) * streaming.abr.bandwidthSafetyFactor;
-        //     let bitrateThreshold = currentBitrate / ($scope.playerCount - 1);
-        //     if (availableThroughput >= 0 && availableThroughput < switchBitrate) {
-        //         if (availableThroughput / switchBitrate >= 0.8) {
-        //             switchQuality = switchQuality;
-        //         } else if (availableThroughput / switchBitrate >= 0.5) {
-        //             switchQuality = Math.max(switchQuality - 1, 0);
-        //         } else {
-        //             switchQuality = 0;
-        //         }
-        //         switchBitrate = bitrateList[switchQuality].bitrate;
-        //     }
-        //     console.log([$scope.totalThroughput, currentBitrate, availableThroughput, switchBitrate]);
-        // }
+        // Make an adjustment according to the total throughput
+        if ($scope.totalThroughput != 0 && $scope.playerBitrateList != []) {
+            // Compute the bitrate other tiles occupy (regardless of audio)
+            let currentBitrate = 0;
+            for (let i = 0; i < $scope.playerCount; i++) {
+                if (i != info.count) {
+                    currentBitrate += $scope.playerBitrateList[i][$scope.playerDownloadingQuality[i]].bitrate;
+                }
+            }
+            // Adjust the quality according to quality itself and the divation between available throughput and current switch bitrate
+            let availableThroughput = ($scope.totalThroughput - currentBitrate) * streaming.abr.bandwidthSafetyFactor;
+            while (availableThroughput >= 0 && switchQuality > 0 && availableThroughput < switchBitrate) {
+                switchQuality = Math.max(switchQuality - 1, 0);
+                switchBitrate = bitrateList[switchQuality].bitrate;
+            }
+            console.log([info.count, $scope.totalThroughput, currentBitrate, availableThroughput, switchBitrate]);
+        }
 
         // Ask to switch to the bitrate according to FOV and Content
         switchRequest.quality = switchQuality;

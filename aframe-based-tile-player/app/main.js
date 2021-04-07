@@ -21,10 +21,10 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
     $scope.playerBufferLength = [];  // Data from monitor
     $scope.playerAverageThroughput = [];  // Data from monitor
     $scope.playerTime = [];  // Data from monitor
-    $scope.playerQuality = [];  // Data from monitor
+    $scope.playerDownloadingQuality = [];  // Data from monitor
     $scope.playerFOVScore = [];  // Data from monitor
     $scope.playerContentScore = [];  // Data from monitor
-    $scope.playerPastQuality = [];  // Data from monitor's playerQuality
+    $scope.playerPastDownloadingQuality = [];  // Data from monitor's playerDownloadingQuality
     $scope.playerCatchUp = [];  // Data from playback controller
 
     $scope.playerBitrateList = [];  // Data from bitrate list
@@ -523,7 +523,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                     $scope.playerBufferLength[$scope.playerCount] = $scope.players[$scope.playerCount].getBufferLength();
                     $scope.playerAverageThroughput[$scope.playerCount] = $scope.players[$scope.playerCount].getAverageThroughput("video");
                     $scope.playerTime[$scope.playerCount] = $scope.players[$scope.playerCount].time();
-                    $scope.playerQuality[$scope.playerCount] = $scope.players[$scope.playerCount].getQualityFor("video");
+                    $scope.playerDownloadingQuality[$scope.playerCount] = $scope.players[$scope.playerCount].getQualityFor("video");
                     $scope.playerFOVScore[$scope.playerCount] = 0;
                     $scope.playerContentScore[$scope.playerCount] = 0;
                     $scope.playerBitrateList[$scope.playerCount] = [];
@@ -558,7 +558,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             $scope.playerBufferLength[$scope.playerCount] = $scope.players[$scope.playerCount].getBufferLength();;
             $scope.playerAverageThroughput[$scope.playerCount] = $scope.players[$scope.playerCount].getAverageThroughput("audio");
             $scope.playerTime[$scope.playerCount] = $scope.players[$scope.playerCount].time();
-            $scope.playerQuality[$scope.playerCount] = $scope.players[$scope.playerCount].getQualityFor("audio");
+            $scope.playerDownloadingQuality[$scope.playerCount] = $scope.players[$scope.playerCount].getQualityFor("audio");
             $scope.playerCatchUp[$scope.playerCount] = false;
         }
 
@@ -645,11 +645,11 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
 
     // Compute QoE
     function computeQoE() {
-        if ($scope.playerPastQuality.length == 0 || $scope.playerQuality.length == 0) {
+        if ($scope.playerPastDownloadingQuality.length == 0 || $scope.playerDownloadingQuality.length == 0) {
             $scope.totalQOE = NaN;
             $scope.viewerQOE = NaN;
             $scope.contentQOE = NaN;
-            $scope.playerPastQuality = $scope.playerQuality;
+            $scope.playerPastDownloadingQuality = $scope.playerDownloadingQuality;
             return;
         }
         let pretotalQOE = 0;  // = Quality - miu * Stalls - lambda * Quality switches
@@ -674,12 +674,12 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             let divation = Math.acos((tile_z * view_z + tile_x * view_x + tile_y * view_y) / (Math.sqrt(tile_z * tile_z + tile_x * tile_x + tile_y * tile_y) * Math.sqrt(view_z * view_z + view_x * view_x + view_y * view_y))) * (180 / Math.PI);
             switch ($scope.qQOE) {
                 case 'linear':
-                    pretotalQOE = pretotalQOE + ($scope.playerBitrateList[i][$scope.playerQuality[i]].bitrate - $scope.playerBitrateList[i][0].bitrate) - $scope.lambdaQOE * Math.abs($scope.playerBitrateList[i][$scope.playerQuality[i]].bitrate - $scope.playerBitrateList[i][$scope.playerPastQuality[i]].bitrate);
-                    previewerQOE = previewerQOE + (divation < 61 ? $scope.a1QOE : divation < 121 ? $scope.a2QOE : $scope.a3QOE) * (($scope.playerBitrateList[i][$scope.playerQuality[i]].bitrate - $scope.playerBitrateList[i][0].bitrate) - $scope.lambdaQOE * Math.abs($scope.playerBitrateList[i][$scope.playerQuality[i]].bitrate - $scope.playerBitrateList[i][$scope.playerPastQuality[i]].bitrate));
+                    pretotalQOE = pretotalQOE + ($scope.playerBitrateList[i][$scope.playerDownloadingQuality[i]].bitrate - $scope.playerBitrateList[i][0].bitrate) - $scope.lambdaQOE * Math.abs($scope.playerBitrateList[i][$scope.playerDownloadingQuality[i]].bitrate - $scope.playerBitrateList[i][$scope.playerPastDownloadingQuality[i]].bitrate);
+                    previewerQOE = previewerQOE + (divation < 61 ? $scope.a1QOE : divation < 121 ? $scope.a2QOE : $scope.a3QOE) * (($scope.playerBitrateList[i][$scope.playerDownloadingQuality[i]].bitrate - $scope.playerBitrateList[i][0].bitrate) - $scope.lambdaQOE * Math.abs($scope.playerBitrateList[i][$scope.playerDownloadingQuality[i]].bitrate - $scope.playerBitrateList[i][$scope.playerPastDownloadingQuality[i]].bitrate));
                     break;
                 case 'log':
-                    pretotalQOE = pretotalQOE + Math.log(($scope.playerBitrateList[i][$scope.playerQuality[i]].bitrate - $scope.playerBitrateList[i][0].bitrate) + 1) - $scope.lambdaQOE * Math.abs(Math.log($scope.playerBitrateList[i][$scope.playerQuality[i]].bitrate + 1) - Math.log($scope.playerBitrateList[i][$scope.playerPastQuality[i]].bitrate + 1));
-                    previewerQOE = previewerQOE + (divation < 61 ? $scope.a1QOE : divation < 121 ? $scope.a2QOE : $scope.a3QOE) * (Math.log(($scope.playerBitrateList[i][$scope.playerQuality[i]].bitrate - $scope.playerBitrateList[i][0].bitrate) + 1) - $scope.lambdaQOE * Math.abs(Math.log($scope.playerBitrateList[i][$scope.playerQuality[i]].bitrate + 1) - Math.log($scope.playerBitrateList[i][$scope.playerPastQuality[i]].bitrate + 1)));
+                    pretotalQOE = pretotalQOE + Math.log(($scope.playerBitrateList[i][$scope.playerDownloadingQuality[i]].bitrate - $scope.playerBitrateList[i][0].bitrate) + 1) - $scope.lambdaQOE * Math.abs(Math.log($scope.playerBitrateList[i][$scope.playerDownloadingQuality[i]].bitrate + 1) - Math.log($scope.playerBitrateList[i][$scope.playerPastDownloadingQuality[i]].bitrate + 1));
+                    previewerQOE = previewerQOE + (divation < 61 ? $scope.a1QOE : divation < 121 ? $scope.a2QOE : $scope.a3QOE) * (Math.log(($scope.playerBitrateList[i][$scope.playerDownloadingQuality[i]].bitrate - $scope.playerBitrateList[i][0].bitrate) + 1) - $scope.lambdaQOE * Math.abs(Math.log($scope.playerBitrateList[i][$scope.playerDownloadingQuality[i]].bitrate + 1) - Math.log($scope.playerBitrateList[i][$scope.playerPastDownloadingQuality[i]].bitrate + 1)));
                     break;
                 default:
                     break;
@@ -688,7 +688,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
         $scope.totalQOE = pretotalQOE;
         $scope.viewerQOE = previewerQOE;
         $scope.contentQOE = precontentQOE;
-        $scope.playerPastQuality = $scope.playerQuality;
+        $scope.playerPastDownloadingQuality = $scope.playerDownloadingQuality;
     }
 
     // Show the data in monitor
@@ -700,7 +700,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                     $scope.playerBufferLength[i] = $scope.players[i].getBufferLength("audio");
                     $scope.playerAverageThroughput[i] = $scope.players[i].getAverageThroughput("audio");
                     $scope.playerTime[i] = $scope.players[i].time();
-                    $scope.playerQuality[i] = $scope.players[i].getQualityFor("audio");
+                    $scope.playerDownloadingQuality[i] = $scope.players[i].getQualityFor("audio");
                     $scope.stats.push({
                         playerid : "audio",
                         bufferlevel : $scope.playerBufferLength[i].toFixed(2) + " s",
@@ -720,17 +720,17 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                 $scope.playerBufferLength[i] = $scope.players[i].getBufferLength("video");
                 $scope.playerAverageThroughput[i] = $scope.players[i].getAverageThroughput("video");
                 $scope.playerTime[i] = $scope.players[i].time();
-                $scope.playerQuality[i] = $scope.players[i].getQualityFor("video");
+                $scope.playerDownloadingQuality[i] = $scope.players[i].getQualityFor("video");
                 $scope.stats.push({
                     playerid : "video_" + i,
                     bufferlevel : $scope.playerBufferLength[i].toFixed(2) + " s",
                     throughput : $scope.playerAverageThroughput[i].toFixed(0)+ " bps",
                     time : $scope.playerTime[i].toFixed(2) + " s",
-                    quality : $scope.playerQuality[i].toFixed(0),
+                    quality : $scope.playerDownloadingQuality[i].toFixed(0),
                     fovscore : $scope.playerFOVScore[i].toFixed(0),
                     playerContentScore : $scope.playerContentScore[i].toFixed(0),
                     totaltime : ($scope.playerBufferLength[i] + $scope.playerTime[i]).toFixed(2) + " s",
-                    playerCatchUp : ($scope.playerCatchUp[$scope.i] ? "Catching up" : "Synchronizing")
+                    playerCatchUp : ($scope.playerCatchUp[i] ? "Catching up" : "Synchronizing")
                 });
             }
         }
@@ -741,12 +741,12 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
         let time = getTimeForPlot();
         for (let i = 0; i < $scope.playerCount; i++) {
             //$.plot(plotArea, scope.dataset, scope.options)
-            $scope.plotPoint("video_" + i, 'quality', $scope.playerQuality[i], time);
+            $scope.plotPoint("video_" + i, 'quality', $scope.playerDownloadingQuality[i], time);
             $scope.plotPoint("video_" + i, 'buffer', $scope.playerBufferLength[i], time);
             $scope.plotPoint("video_" + i, 'throughput', $scope.playerAverageThroughput[i], time);
         }
         if ($scope.contents.audio && $scope.contents.audio != "") {
-            $scope.plotPoint("audio", 'quality', $scope.playerQuality[$scope.playerCount], time);
+            $scope.plotPoint("audio", 'quality', $scope.playerDownloadingQuality[$scope.playerCount], time);
             $scope.plotPoint("audio", 'buffer', $scope.playerBufferLength[$scope.playerCount], time);
             $scope.plotPoint("audio", 'throughput', $scope.playerAverageThroughput[$scope.playerCount], time);
         }
