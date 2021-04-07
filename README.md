@@ -1,6 +1,6 @@
 # vr-dash-tile-player
 
-### Tools and Frameworks we use
+## Tools and Frameworks we use
 
 1. dash.js - For adaptive bitrate streaming via DASH.
 2. three.js - For 3D rendering, with CSS3DRenderer.js so far (WebXR not supported).
@@ -8,7 +8,7 @@
 4. angular.js - For data virtualization and code optimization.
 5. sensitive segmentation suites - For video's content analystics.
 
-### ABR Algorithms we use
+## ABR Algorithms we use
 
 1. FOVRule - Choose the bitrates for each tile according to FOV.
 2. HighestBitrateRule - Always choose the highest bitrate for each tile.
@@ -17,16 +17,16 @@
 
 Default: Using FOVRule as default. If need please change the config in HTML page.
 
-### How to run
+## How to run
 
-##### Player over three.js (No more updates)
+#### Player over three.js (No more updates)
 
 1. Run the HTML file via HTTP address (e.g., http://localhost/vr-dash-tile-player/CSS_VR6_dashjs.html).
 2. Confirm the location of JSON file and the Rule you want to use in HTML page, then click "link". (Choosing a CSV file is necessary if FOVContentRule is selected.)
 3. Click "load" to initialize MediaPlayer according to JSON description.
 4. Click "Play" and "Pause" to control the player.
 
-##### Player over aframe
+#### Player over aframe
 
 1. Run the HTML file via HTTP address (e.g., http://localhost/vr-dash-tile-player/Index.html).
 2. Confirm the location of JSON file, the Mode (VOD/LIVE) and the Rule(FOVRule/HighestBitrateRule/FOVContentRule/ThroughputRule) you want to use in HTML page, then click "link".
@@ -35,7 +35,7 @@ Default: Using FOVRule as default. If need please change the config in HTML page
 5. Click "Play" and "Pause" to control the player.
 6. When using FOVRule/FOVContentRule, dragging the view in iframe would activate bitrate selection based on FOV.
 
-### Media Preprocessing
+## Media Preprocessing
 
 1. DASH Adaptive Streaming for HTML 5 Video (Webm) : https://developer.mozilla.org/en-US/docs/Web/Media/DASH_Adaptive_Streaming_for_HTML_5_Video
 2. FFMPEG + Bento4 (MP4) : http://www.ffmpeg.org/documentation.html , https://www.bento4.com/documentation/
@@ -43,8 +43,7 @@ Default: Using FOVRule as default. If need please change the config in HTML page
 4. When applying FOVContentRule offline, it's necessary to compute the contents' weights in advanced. We capture each tile's with a interval by FFMPEG then adopt Semantic-Segmentation-Suite (based on Tensorflow v2) to do the content analytics, with the result showing as an embedded JSON file. A sample JSON file based on dataset CMPVP907 is embedded in the dataset which can be used directly when playing the related video.
 
 
-##### Here is an example of media preprocessing for our platform with an ERP video. Use all the commands in a .sh file would be simpler.
-(if you have a CMP video, just skip the steps of ERP/CMP converting.)
+#### Here is an example of media preprocessing for our platform with an ERP video. Use all the commands in a .sh file would be simpler. (if you have a CMP video, just skip the steps of ERP/CMP converting.)
 
 1. Make sure you have installed the tools we need to use: FFMPEG, Bento4.
 2. Use FFMPEG to convert your video from ERP mode to CMP mode (if you have a CMP video, just skip this step). Here's the code for converting an ERP video to a CMP video with the size 4320 x 2880 (each face with 1440 x 1440) using VP9 coder (all the parameters can be customized according to your requirement, more info please check FFMPEG official documentation):
