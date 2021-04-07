@@ -43,7 +43,7 @@ Default: Using FOVRule as default. If need please change the config in HTML page
 4. When applying FOVContentRule offline, it's necessary to compute the contents' weights in advanced. We capture each tile's with a interval by FFMPEG then adopt Semantic-Segmentation-Suite (based on Tensorflow v2) to do the content analytics, with the result showing as an embedded JSON file. A sample JSON file based on dataset CMPVP907 is embedded in the dataset which can be used directly when playing the related video.
 
 
-#####Here is an example of media preprocessing for our platform with an ERP video. Use all the commands in a .sh file would be simpler.
+##### Here is an example of media preprocessing for our platform with an ERP video. Use all the commands in a .sh file would be simpler.
 (if you have a CMP video, just skip the steps of ERP/CMP converting.)
 
 1. Make sure you have installed the tools we need to use: FFMPEG, Bento4.
