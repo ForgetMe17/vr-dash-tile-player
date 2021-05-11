@@ -480,7 +480,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                             'bufferToKeep': $scope.playerBufferToKeep,
                             'stableBufferTime': $scope.playerStableBufferTime,
                             'bufferTimeAtTopQuality': $scope.playerBufferTimeAtTopQuality,
-                            'fastswitchenabled': true,
+                            'fastSwitchEnabled': true,
                             'liveDelay': 0, 
                             'liveCatchup': {
                                 'enabled': true,
@@ -704,7 +704,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                     $scope.stats.push({
                         playerid : "audio",
                         bufferlevel : $scope.playerBufferLength[i].toFixed(2) + " s",
-                        throughput : $scope.playerAverageThroughput[i].toFixed(0)+ " bps",
+                        throughput : $scope.playerAverageThroughput[i].toFixed(0)+ " kbps",
                         time : $scope.playerTime[i].toFixed(2) + " s",
                         quality : $scope.players[i].getQualityFor("audio").toFixed(0),
                         fovscore : NaN,
@@ -724,7 +724,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                 $scope.stats.push({
                     playerid : "video_" + i,
                     bufferlevel : $scope.playerBufferLength[i].toFixed(2) + " s",
-                    throughput : $scope.playerAverageThroughput[i].toFixed(0)+ " bps",
+                    throughput : $scope.playerAverageThroughput[i].toFixed(0)+ " kbps",
                     time : $scope.playerTime[i].toFixed(2) + " s",
                     quality : $scope.playerDownloadingQuality[i].toFixed(0),
                     fovscore : $scope.playerFOVScore[i].toFixed(0),
