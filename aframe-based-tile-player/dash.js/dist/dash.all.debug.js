@@ -27393,8 +27393,8 @@ function MediaPlayer() {
 
     /*
     ---------------------------------------------------------------------------
-         INIT FUNCTIONS
-     ---------------------------------------------------------------------------
+          INIT FUNCTIONS
+      ---------------------------------------------------------------------------
     */
     function setup() {
         logger = debug.getLogger(instance);
@@ -27701,8 +27701,8 @@ function MediaPlayer() {
 
     /*
     ---------------------------------------------------------------------------
-         PLAYBACK FUNCTIONS
-     ---------------------------------------------------------------------------
+          PLAYBACK FUNCTIONS
+      ---------------------------------------------------------------------------
     */
 
     /**
@@ -28057,8 +28057,8 @@ function MediaPlayer() {
 
     /*
     ---------------------------------------------------------------------------
-         AUTO BITRATE
-     ---------------------------------------------------------------------------
+          AUTO BITRATE
+      ---------------------------------------------------------------------------
     */
     /**
      * Gets the top quality BitrateInfo checking portal limit and max allowed.
@@ -28151,8 +28151,8 @@ function MediaPlayer() {
 
     /*
     ---------------------------------------------------------------------------
-         MEDIA PLAYER CONFIGURATION
-     ---------------------------------------------------------------------------
+          MEDIA PLAYER CONFIGURATION
+      ---------------------------------------------------------------------------
     */
     /**
      * <p>Set to false to prevent stream from auto-playing when the view is attached.</p>
@@ -28353,8 +28353,8 @@ function MediaPlayer() {
 
     /*
     ---------------------------------------------------------------------------
-         OFFLINE
-     ---------------------------------------------------------------------------
+          OFFLINE
+      ---------------------------------------------------------------------------
     */
 
     /**
@@ -28368,8 +28368,8 @@ function MediaPlayer() {
 
     /*
     ---------------------------------------------------------------------------
-         METRICS
-     ---------------------------------------------------------------------------
+          METRICS
+      ---------------------------------------------------------------------------
     */
     /**
      * Returns the DashMetrics.js Module. You use this Module to get access to all the public metrics
@@ -28386,8 +28386,8 @@ function MediaPlayer() {
 
     /*
     ---------------------------------------------------------------------------
-         TEXT MANAGEMENT
-     ---------------------------------------------------------------------------
+          TEXT MANAGEMENT
+      ---------------------------------------------------------------------------
     */
     /**
      * Set default language for text. If default language is not one of text tracks, dash will choose the first one.
@@ -28548,8 +28548,8 @@ function MediaPlayer() {
 
     /*
     ---------------------------------------------------------------------------
-         VIDEO ELEMENT MANAGEMENT
-     ---------------------------------------------------------------------------
+          VIDEO ELEMENT MANAGEMENT
+      ---------------------------------------------------------------------------
     */
 
     /**
@@ -28626,8 +28626,8 @@ function MediaPlayer() {
 
     /*
     ---------------------------------------------------------------------------
-         STREAM AND TRACK MANAGEMENT
-     ---------------------------------------------------------------------------
+          STREAM AND TRACK MANAGEMENT
+      ---------------------------------------------------------------------------
     */
     /**
      * @param {MediaType} type
@@ -28853,8 +28853,8 @@ function MediaPlayer() {
 
     /*
     ---------------------------------------------------------------------------
-         PROTECTION MANAGEMENT
-     ---------------------------------------------------------------------------
+          PROTECTION MANAGEMENT
+      ---------------------------------------------------------------------------
     */
 
     /**
@@ -28994,8 +28994,8 @@ function MediaPlayer() {
 
     /*
     ---------------------------------------------------------------------------
-         THUMBNAILS MANAGEMENT
-     ---------------------------------------------------------------------------
+          THUMBNAILS MANAGEMENT
+      ---------------------------------------------------------------------------
     */
 
     /**
@@ -29033,8 +29033,8 @@ function MediaPlayer() {
 
     /*
     ---------------------------------------------------------------------------
-         TOOLS AND OTHERS FUNCTIONS
-     ---------------------------------------------------------------------------
+          TOOLS AND OTHERS FUNCTIONS
+      ---------------------------------------------------------------------------
     */
     /**
      * Allows application to retrieve a manifest.  Manifest loading is asynchro
@@ -38571,6 +38571,7 @@ function ScheduleController(config) {
                 }
                 if ((item.quality !== lastFragmentRequest.quality || item.adaptationIndex !== lastFragmentRequest.adaptationIndex) && trigger) {
                     eventBus.trigger(_coreEventsEvents2['default'].QUALITY_CHANGE_RENDERED, {
+                        info: settings.get().info,
                         mediaType: type,
                         oldQuality: lastFragmentRequest.quality,
                         newQuality: item.quality
@@ -43310,61 +43311,61 @@ module.exports = exports['default'];
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
-    value: true
+        value: true
 });
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
 var DVBErrors = function DVBErrors() {
-    _classCallCheck(this, DVBErrors);
+        _classCallCheck(this, DVBErrors);
 
-    this.mpdurl = null;
-    // String - Absolute URL from which the MPD was originally
-    // retrieved (MPD updates will not change this value).
+        this.mpdurl = null;
+        // String - Absolute URL from which the MPD was originally
+        // retrieved (MPD updates will not change this value).
 
-    this.errorcode = null;
-    // String - The value of errorcode depends upon the type
-    // of error being reported. For an error listed in the
-    // ErrorType column below the value is as described in the
-    // Value column.
-    //
-    // ErrorType                                            Value
-    // ---------                                            -----
-    // HTTP error status code                               HTTP status code
-    // Unknown HTTP status code                             HTTP status code
-    // SSL connection failed                                "SSL" followed by SSL alert value
-    // DNS resolution failed                                "C00"
-    // Host unreachable                                     "C01"
-    // Connection refused                                   "C02"
-    // Connection error – Not otherwise specified           "C03"
-    // Corrupt media – ISO BMFF container cannot be parsed  "M00"
-    // Corrupt media – Not otherwise specified              "M01"
-    // Changing Base URL in use due to errors               "F00"
-    // Becoming an error reporting Player                   "S00"
+        this.errorcode = null;
+        // String - The value of errorcode depends upon the type
+        // of error being reported. For an error listed in the
+        // ErrorType column below the value is as described in the
+        // Value column.
+        //
+        // ErrorType                                            Value
+        // ---------                                            -----
+        // HTTP error status code                               HTTP status code
+        // Unknown HTTP status code                             HTTP status code
+        // SSL connection failed                                "SSL" followed by SSL alert value
+        // DNS resolution failed                                "C00"
+        // Host unreachable                                     "C01"
+        // Connection refused                                   "C02"
+        // Connection error – Not otherwise specified           "C03"
+        // Corrupt media – ISO BMFF container cannot be parsed  "M00"
+        // Corrupt media – Not otherwise specified              "M01"
+        // Changing Base URL in use due to errors               "F00"
+        // Becoming an error reporting Player                   "S00"
 
-    this.terror = null;
-    // Real-Time - Date and time at which error occurred in UTC,
-    // formatted as a combined date and time according to ISO 8601.
+        this.terror = null;
+        // Real-Time - Date and time at which error occurred in UTC,
+        // formatted as a combined date and time according to ISO 8601.
 
-    this.url = null;
-    // String - Absolute URL from which data was being requested
-    // when this error occurred. If the error report is in relation
-    // to corrupt media or changing BaseURL, this may be a null
-    // string if the URL from which the media was obtained or
-    // which led to the change of BaseURL is no longer known.
+        this.url = null;
+        // String - Absolute URL from which data was being requested
+        // when this error occurred. If the error report is in relation
+        // to corrupt media or changing BaseURL, this may be a null
+        // string if the URL from which the media was obtained or
+        // which led to the change of BaseURL is no longer known.
 
-    this.ipaddress = null;
-    // String - IP Address which the host name in "url" resolved to.
-    // If the error report is in relation to corrupt media or
-    // changing BaseURL, this may be a null string if the URL
-    // from which the media was obtained or which led to the
-    // change of BaseURL is no longer known.
+        this.ipaddress = null;
+        // String - IP Address which the host name in "url" resolved to.
+        // If the error report is in relation to corrupt media or
+        // changing BaseURL, this may be a null string if the URL
+        // from which the media was obtained or which led to the
+        // change of BaseURL is no longer known.
 
-    this.servicelocation = null;
-    // String - The value of the serviceLocation field in the
-    // BaseURL being used. In the event of this report indicating
-    // a change of BaseURL this is the value from the BaseURL
-    // being moved from.
+        this.servicelocation = null;
+        // String - The value of the serviceLocation field in the
+        // BaseURL being used. In the event of this report indicating
+        // a change of BaseURL this is the value from the BaseURL
+        // being moved from.
 };
 
 DVBErrors.SSL_CONNECTION_FAILED_PREFIX = 'SSL';
@@ -56802,37 +56803,37 @@ module.exports = exports['default'];
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
-  value: true
+        value: true
 });
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var QoeInfo = function QoeInfo() {
-  _classCallCheck(this, QoeInfo);
+        _classCallCheck(this, QoeInfo);
 
-  // Type e.g. 'segment'
-  this.type = null;
+        // Type e.g. 'segment'
+        this.type = null;
 
-  // Store lastBitrate for calculation of bitrateSwitchWSum
-  this.lastBitrate = null;
+        // Store lastBitrate for calculation of bitrateSwitchWSum
+        this.lastBitrate = null;
 
-  // Weights for each Qoe factor
-  this.weights = {};
-  this.weights.bitrateReward = null;
-  this.weights.bitrateSwitchPenalty = null;
-  this.weights.rebufferPenalty = null;
-  this.weights.latencyPenalty = null;
-  this.weights.playbackSpeedPenalty = null;
+        // Weights for each Qoe factor
+        this.weights = {};
+        this.weights.bitrateReward = null;
+        this.weights.bitrateSwitchPenalty = null;
+        this.weights.rebufferPenalty = null;
+        this.weights.latencyPenalty = null;
+        this.weights.playbackSpeedPenalty = null;
 
-  // Weighted Sum for each Qoe factor
-  this.bitrateWSum = 0; // kbps
-  this.bitrateSwitchWSum = 0; // kbps
-  this.rebufferWSum = 0; // seconds
-  this.latencyWSum = 0; // seconds
-  this.playbackSpeedWSum = 0; // e.g. 0.95, 1.0, 1.05
+        // Weighted Sum for each Qoe factor
+        this.bitrateWSum = 0; // kbps
+        this.bitrateSwitchWSum = 0; // kbps
+        this.rebufferWSum = 0; // seconds
+        this.latencyWSum = 0; // seconds
+        this.playbackSpeedWSum = 0; // e.g. 0.95, 1.0, 1.05
 
-  // Store total Qoe value based on current Weighted Sum values
-  this.totalQoe = 0;
+        // Store total Qoe value based on current Weighted Sum values
+        this.totalQoe = 0;
 };
 
 exports["default"] = QoeInfo;
@@ -61227,7 +61228,7 @@ function DOMStorage(config) {
 
         /* When Safari (OS X or iOS) is in private browsing mode, it appears as though localStorage is available, but trying to call setItem throws an exception.
          http://stackoverflow.com/questions/14555347/html5-localstorage-error-with-safari-quota-exceeded-err-dom-exception-22-an
-          Check if the storage can be used
+           Check if the storage can be used
          */
         try {
             storage.setItem(testKey, testValue);
@@ -61972,7 +61973,7 @@ module.exports = exports['default'];
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
-  value: true
+    value: true
 });
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
@@ -61995,22 +61996,22 @@ var _coreFactoryMaker2 = _interopRequireDefault(_coreFactoryMaker);
  */
 function ErrorHandler() {
 
-  var instance = undefined;
-  var context = this.context;
-  var eventBus = (0, _coreEventBus2['default'])(context).getInstance();
+    var instance = undefined;
+    var context = this.context;
+    var eventBus = (0, _coreEventBus2['default'])(context).getInstance();
 
-  /**
-   * @param {object} err DashJSError with code, message and data attributes
-   * @memberof module:ErrorHandler
-   */
-  function error(err) {
-    eventBus.trigger(_coreEventsEvents2['default'].ERROR, { error: err });
-  }
-  instance = {
-    error: error
-  };
+    /**
+     * @param {object} err DashJSError with code, message and data attributes
+     * @memberof module:ErrorHandler
+     */
+    function error(err) {
+        eventBus.trigger(_coreEventsEvents2['default'].ERROR, { error: err });
+    }
+    instance = {
+        error: error
+    };
 
-  return instance;
+    return instance;
 }
 
 ErrorHandler.__dashjs_factory_name = 'ErrorHandler';
@@ -62359,7 +62360,7 @@ module.exports = exports['default'];
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
-  value: true
+    value: true
 });
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
@@ -62379,25 +62380,25 @@ var _fastDeepEqual2 = _interopRequireDefault(_fastDeepEqual);
  */
 function ObjectUtils() {
 
-  var instance = undefined;
+    var instance = undefined;
 
-  /**
-   * Returns true if objects are equal
-   * @return {boolean}
-   * @param {object} obj1
-   * @param {object} obj2
-   * @memberof module:ObjectUtils
-   * @instance
-   */
-  function areEqual(obj1, obj2) {
-    return (0, _fastDeepEqual2['default'])(obj1, obj2);
-  }
+    /**
+     * Returns true if objects are equal
+     * @return {boolean}
+     * @param {object} obj1
+     * @param {object} obj2
+     * @memberof module:ObjectUtils
+     * @instance
+     */
+    function areEqual(obj1, obj2) {
+        return (0, _fastDeepEqual2['default'])(obj1, obj2);
+    }
 
-  instance = {
-    areEqual: areEqual
-  };
+    instance = {
+        areEqual: areEqual
+    };
 
-  return instance;
+    return instance;
 }
 
 ObjectUtils.__dashjs_factory_name = 'ObjectUtils';

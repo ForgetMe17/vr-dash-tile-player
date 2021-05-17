@@ -2918,61 +2918,61 @@ module.exports = exports['default'];
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
-    value: true
+        value: true
 });
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
 var DVBErrors = function DVBErrors() {
-    _classCallCheck(this, DVBErrors);
+        _classCallCheck(this, DVBErrors);
 
-    this.mpdurl = null;
-    // String - Absolute URL from which the MPD was originally
-    // retrieved (MPD updates will not change this value).
+        this.mpdurl = null;
+        // String - Absolute URL from which the MPD was originally
+        // retrieved (MPD updates will not change this value).
 
-    this.errorcode = null;
-    // String - The value of errorcode depends upon the type
-    // of error being reported. For an error listed in the
-    // ErrorType column below the value is as described in the
-    // Value column.
-    //
-    // ErrorType                                            Value
-    // ---------                                            -----
-    // HTTP error status code                               HTTP status code
-    // Unknown HTTP status code                             HTTP status code
-    // SSL connection failed                                "SSL" followed by SSL alert value
-    // DNS resolution failed                                "C00"
-    // Host unreachable                                     "C01"
-    // Connection refused                                   "C02"
-    // Connection error – Not otherwise specified           "C03"
-    // Corrupt media – ISO BMFF container cannot be parsed  "M00"
-    // Corrupt media – Not otherwise specified              "M01"
-    // Changing Base URL in use due to errors               "F00"
-    // Becoming an error reporting Player                   "S00"
+        this.errorcode = null;
+        // String - The value of errorcode depends upon the type
+        // of error being reported. For an error listed in the
+        // ErrorType column below the value is as described in the
+        // Value column.
+        //
+        // ErrorType                                            Value
+        // ---------                                            -----
+        // HTTP error status code                               HTTP status code
+        // Unknown HTTP status code                             HTTP status code
+        // SSL connection failed                                "SSL" followed by SSL alert value
+        // DNS resolution failed                                "C00"
+        // Host unreachable                                     "C01"
+        // Connection refused                                   "C02"
+        // Connection error – Not otherwise specified           "C03"
+        // Corrupt media – ISO BMFF container cannot be parsed  "M00"
+        // Corrupt media – Not otherwise specified              "M01"
+        // Changing Base URL in use due to errors               "F00"
+        // Becoming an error reporting Player                   "S00"
 
-    this.terror = null;
-    // Real-Time - Date and time at which error occurred in UTC,
-    // formatted as a combined date and time according to ISO 8601.
+        this.terror = null;
+        // Real-Time - Date and time at which error occurred in UTC,
+        // formatted as a combined date and time according to ISO 8601.
 
-    this.url = null;
-    // String - Absolute URL from which data was being requested
-    // when this error occurred. If the error report is in relation
-    // to corrupt media or changing BaseURL, this may be a null
-    // string if the URL from which the media was obtained or
-    // which led to the change of BaseURL is no longer known.
+        this.url = null;
+        // String - Absolute URL from which data was being requested
+        // when this error occurred. If the error report is in relation
+        // to corrupt media or changing BaseURL, this may be a null
+        // string if the URL from which the media was obtained or
+        // which led to the change of BaseURL is no longer known.
 
-    this.ipaddress = null;
-    // String - IP Address which the host name in "url" resolved to.
-    // If the error report is in relation to corrupt media or
-    // changing BaseURL, this may be a null string if the URL
-    // from which the media was obtained or which led to the
-    // change of BaseURL is no longer known.
+        this.ipaddress = null;
+        // String - IP Address which the host name in "url" resolved to.
+        // If the error report is in relation to corrupt media or
+        // changing BaseURL, this may be a null string if the URL
+        // from which the media was obtained or which led to the
+        // change of BaseURL is no longer known.
 
-    this.servicelocation = null;
-    // String - The value of the serviceLocation field in the
-    // BaseURL being used. In the event of this report indicating
-    // a change of BaseURL this is the value from the BaseURL
-    // being moved from.
+        this.servicelocation = null;
+        // String - The value of the serviceLocation field in the
+        // BaseURL being used. In the event of this report indicating
+        // a change of BaseURL this is the value from the BaseURL
+        // being moved from.
 };
 
 DVBErrors.SSL_CONNECTION_FAILED_PREFIX = 'SSL';

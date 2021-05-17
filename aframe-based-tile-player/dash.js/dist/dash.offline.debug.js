@@ -13870,8 +13870,8 @@ function OfflineController(config) {
 
     /*
     ---------------------------------------------------------------------------
-         OFFLINE CONTROLLER API
-     ---------------------------------------------------------------------------
+          OFFLINE CONTROLLER API
+      ---------------------------------------------------------------------------
     */
 
     /**
@@ -14345,7 +14345,7 @@ module.exports = exports['default'];
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
-    value: true
+        value: true
 });
 
 var _get = function get(_x, _x2, _x3) { var _again = true; _function: while (_again) { var object = _x, property = _x2, receiver = _x3; _again = false; if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { _x = parent; _x2 = property; _x3 = receiver; _again = true; desc = parent = undefined; continue _function; } } else if ('value' in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } } };
@@ -14366,39 +14366,39 @@ var _coreEventsEventsBase2 = _interopRequireDefault(_coreEventsEventsBase);
  */
 
 var OfflineEvents = (function (_EventsBase) {
-    _inherits(OfflineEvents, _EventsBase);
+        _inherits(OfflineEvents, _EventsBase);
 
-    function OfflineEvents() {
-        _classCallCheck(this, OfflineEvents);
+        function OfflineEvents() {
+                _classCallCheck(this, OfflineEvents);
 
-        _get(Object.getPrototypeOf(OfflineEvents.prototype), 'constructor', this).call(this);
+                _get(Object.getPrototypeOf(OfflineEvents.prototype), 'constructor', this).call(this);
 
-        /**
-        * Triggered when all mediaInfo has been loaded
-        * @event OfflineEvents#OFFLINE_RECORD_LOADEDMETADATA
-        */
-        this.OFFLINE_RECORD_LOADEDMETADATA = 'public_offlineRecordLoadedmetadata';
+                /**
+                * Triggered when all mediaInfo has been loaded
+                * @event OfflineEvents#OFFLINE_RECORD_LOADEDMETADATA
+                */
+                this.OFFLINE_RECORD_LOADEDMETADATA = 'public_offlineRecordLoadedmetadata';
 
-        /**
-        * Triggered when a record is initialized and download is started
-        * @event OfflineEvents#OFFLINE_RECORD_STARTED
-        */
-        this.OFFLINE_RECORD_STARTED = 'public_offlineRecordStarted';
+                /**
+                * Triggered when a record is initialized and download is started
+                * @event OfflineEvents#OFFLINE_RECORD_STARTED
+                */
+                this.OFFLINE_RECORD_STARTED = 'public_offlineRecordStarted';
 
-        /**
-        * Triggered when the user stop downloading a record
-        * @event OfflineEvents#OFFLINE_RECORD_STOPPED
-        */
-        this.OFFLINE_RECORD_STOPPED = 'public_offlineRecordStopped';
+                /**
+                * Triggered when the user stop downloading a record
+                * @event OfflineEvents#OFFLINE_RECORD_STOPPED
+                */
+                this.OFFLINE_RECORD_STOPPED = 'public_offlineRecordStopped';
 
-        /**
-        * Triggered when all record has been downloaded
-        * @event OfflineEvents#OFFLINE_RECORD_FINISHED
-        */
-        this.OFFLINE_RECORD_FINISHED = 'public_offlineRecordFinished';
-    }
+                /**
+                * Triggered when all record has been downloaded
+                * @event OfflineEvents#OFFLINE_RECORD_FINISHED
+                */
+                this.OFFLINE_RECORD_FINISHED = 'public_offlineRecordFinished';
+        }
 
-    return OfflineEvents;
+        return OfflineEvents;
 })(_coreEventsEventsBase2['default']);
 
 var offlineEvents = new OfflineEvents();
@@ -19941,7 +19941,7 @@ module.exports = exports['default'];
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
-  value: true
+    value: true
 });
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
@@ -19961,25 +19961,25 @@ var _fastDeepEqual2 = _interopRequireDefault(_fastDeepEqual);
  */
 function ObjectUtils() {
 
-  var instance = undefined;
+    var instance = undefined;
 
-  /**
-   * Returns true if objects are equal
-   * @return {boolean}
-   * @param {object} obj1
-   * @param {object} obj2
-   * @memberof module:ObjectUtils
-   * @instance
-   */
-  function areEqual(obj1, obj2) {
-    return (0, _fastDeepEqual2['default'])(obj1, obj2);
-  }
+    /**
+     * Returns true if objects are equal
+     * @return {boolean}
+     * @param {object} obj1
+     * @param {object} obj2
+     * @memberof module:ObjectUtils
+     * @instance
+     */
+    function areEqual(obj1, obj2) {
+        return (0, _fastDeepEqual2['default'])(obj1, obj2);
+    }
 
-  instance = {
-    areEqual: areEqual
-  };
+    instance = {
+        areEqual: areEqual
+    };
 
-  return instance;
+    return instance;
 }
 
 ObjectUtils.__dashjs_factory_name = 'ObjectUtils';

@@ -27319,8 +27319,8 @@ function MediaPlayer() {
 
     /*
     ---------------------------------------------------------------------------
-         INIT FUNCTIONS
-     ---------------------------------------------------------------------------
+          INIT FUNCTIONS
+      ---------------------------------------------------------------------------
     */
     function setup() {
         logger = debug.getLogger(instance);
@@ -27627,8 +27627,8 @@ function MediaPlayer() {
 
     /*
     ---------------------------------------------------------------------------
-         PLAYBACK FUNCTIONS
-     ---------------------------------------------------------------------------
+          PLAYBACK FUNCTIONS
+      ---------------------------------------------------------------------------
     */
 
     /**
@@ -27983,8 +27983,8 @@ function MediaPlayer() {
 
     /*
     ---------------------------------------------------------------------------
-         AUTO BITRATE
-     ---------------------------------------------------------------------------
+          AUTO BITRATE
+      ---------------------------------------------------------------------------
     */
     /**
      * Gets the top quality BitrateInfo checking portal limit and max allowed.
@@ -28077,8 +28077,8 @@ function MediaPlayer() {
 
     /*
     ---------------------------------------------------------------------------
-         MEDIA PLAYER CONFIGURATION
-     ---------------------------------------------------------------------------
+          MEDIA PLAYER CONFIGURATION
+      ---------------------------------------------------------------------------
     */
     /**
      * <p>Set to false to prevent stream from auto-playing when the view is attached.</p>
@@ -28279,8 +28279,8 @@ function MediaPlayer() {
 
     /*
     ---------------------------------------------------------------------------
-         OFFLINE
-     ---------------------------------------------------------------------------
+          OFFLINE
+      ---------------------------------------------------------------------------
     */
 
     /**
@@ -28294,8 +28294,8 @@ function MediaPlayer() {
 
     /*
     ---------------------------------------------------------------------------
-         METRICS
-     ---------------------------------------------------------------------------
+          METRICS
+      ---------------------------------------------------------------------------
     */
     /**
      * Returns the DashMetrics.js Module. You use this Module to get access to all the public metrics
@@ -28312,8 +28312,8 @@ function MediaPlayer() {
 
     /*
     ---------------------------------------------------------------------------
-         TEXT MANAGEMENT
-     ---------------------------------------------------------------------------
+          TEXT MANAGEMENT
+      ---------------------------------------------------------------------------
     */
     /**
      * Set default language for text. If default language is not one of text tracks, dash will choose the first one.
@@ -28474,8 +28474,8 @@ function MediaPlayer() {
 
     /*
     ---------------------------------------------------------------------------
-         VIDEO ELEMENT MANAGEMENT
-     ---------------------------------------------------------------------------
+          VIDEO ELEMENT MANAGEMENT
+      ---------------------------------------------------------------------------
     */
 
     /**
@@ -28552,8 +28552,8 @@ function MediaPlayer() {
 
     /*
     ---------------------------------------------------------------------------
-         STREAM AND TRACK MANAGEMENT
-     ---------------------------------------------------------------------------
+          STREAM AND TRACK MANAGEMENT
+      ---------------------------------------------------------------------------
     */
     /**
      * @param {MediaType} type
@@ -28779,8 +28779,8 @@ function MediaPlayer() {
 
     /*
     ---------------------------------------------------------------------------
-         PROTECTION MANAGEMENT
-     ---------------------------------------------------------------------------
+          PROTECTION MANAGEMENT
+      ---------------------------------------------------------------------------
     */
 
     /**
@@ -28920,8 +28920,8 @@ function MediaPlayer() {
 
     /*
     ---------------------------------------------------------------------------
-         THUMBNAILS MANAGEMENT
-     ---------------------------------------------------------------------------
+          THUMBNAILS MANAGEMENT
+      ---------------------------------------------------------------------------
     */
 
     /**
@@ -28959,8 +28959,8 @@ function MediaPlayer() {
 
     /*
     ---------------------------------------------------------------------------
-         TOOLS AND OTHERS FUNCTIONS
-     ---------------------------------------------------------------------------
+          TOOLS AND OTHERS FUNCTIONS
+      ---------------------------------------------------------------------------
     */
     /**
      * Allows application to retrieve a manifest.  Manifest loading is asynchro
@@ -38274,6 +38274,7 @@ function ScheduleController(config) {
                 }
                 if ((item.quality !== lastFragmentRequest.quality || item.adaptationIndex !== lastFragmentRequest.adaptationIndex) && trigger) {
                     eventBus.trigger(_coreEventsEvents2['default'].QUALITY_CHANGE_RENDERED, {
+                        info: settings.get().info,
                         mediaType: type,
                         oldQuality: lastFragmentRequest.quality,
                         newQuality: item.quality
@@ -48509,37 +48510,37 @@ module.exports = exports['default'];
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
-  value: true
+        value: true
 });
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var QoeInfo = function QoeInfo() {
-  _classCallCheck(this, QoeInfo);
+        _classCallCheck(this, QoeInfo);
 
-  // Type e.g. 'segment'
-  this.type = null;
+        // Type e.g. 'segment'
+        this.type = null;
 
-  // Store lastBitrate for calculation of bitrateSwitchWSum
-  this.lastBitrate = null;
+        // Store lastBitrate for calculation of bitrateSwitchWSum
+        this.lastBitrate = null;
 
-  // Weights for each Qoe factor
-  this.weights = {};
-  this.weights.bitrateReward = null;
-  this.weights.bitrateSwitchPenalty = null;
-  this.weights.rebufferPenalty = null;
-  this.weights.latencyPenalty = null;
-  this.weights.playbackSpeedPenalty = null;
+        // Weights for each Qoe factor
+        this.weights = {};
+        this.weights.bitrateReward = null;
+        this.weights.bitrateSwitchPenalty = null;
+        this.weights.rebufferPenalty = null;
+        this.weights.latencyPenalty = null;
+        this.weights.playbackSpeedPenalty = null;
 
-  // Weighted Sum for each Qoe factor
-  this.bitrateWSum = 0; // kbps
-  this.bitrateSwitchWSum = 0; // kbps
-  this.rebufferWSum = 0; // seconds
-  this.latencyWSum = 0; // seconds
-  this.playbackSpeedWSum = 0; // e.g. 0.95, 1.0, 1.05
+        // Weighted Sum for each Qoe factor
+        this.bitrateWSum = 0; // kbps
+        this.bitrateSwitchWSum = 0; // kbps
+        this.rebufferWSum = 0; // seconds
+        this.latencyWSum = 0; // seconds
+        this.playbackSpeedWSum = 0; // e.g. 0.95, 1.0, 1.05
 
-  // Store total Qoe value based on current Weighted Sum values
-  this.totalQoe = 0;
+        // Store total Qoe value based on current Weighted Sum values
+        this.totalQoe = 0;
 };
 
 exports["default"] = QoeInfo;
@@ -52934,7 +52935,7 @@ function DOMStorage(config) {
 
         /* When Safari (OS X or iOS) is in private browsing mode, it appears as though localStorage is available, but trying to call setItem throws an exception.
          http://stackoverflow.com/questions/14555347/html5-localstorage-error-with-safari-quota-exceeded-err-dom-exception-22-an
-          Check if the storage can be used
+           Check if the storage can be used
          */
         try {
             storage.setItem(testKey, testValue);
@@ -53679,7 +53680,7 @@ module.exports = exports['default'];
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
-  value: true
+    value: true
 });
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
@@ -53702,22 +53703,22 @@ var _coreFactoryMaker2 = _interopRequireDefault(_coreFactoryMaker);
  */
 function ErrorHandler() {
 
-  var instance = undefined;
-  var context = this.context;
-  var eventBus = (0, _coreEventBus2['default'])(context).getInstance();
+    var instance = undefined;
+    var context = this.context;
+    var eventBus = (0, _coreEventBus2['default'])(context).getInstance();
 
-  /**
-   * @param {object} err DashJSError with code, message and data attributes
-   * @memberof module:ErrorHandler
-   */
-  function error(err) {
-    eventBus.trigger(_coreEventsEvents2['default'].ERROR, { error: err });
-  }
-  instance = {
-    error: error
-  };
+    /**
+     * @param {object} err DashJSError with code, message and data attributes
+     * @memberof module:ErrorHandler
+     */
+    function error(err) {
+        eventBus.trigger(_coreEventsEvents2['default'].ERROR, { error: err });
+    }
+    instance = {
+        error: error
+    };
 
-  return instance;
+    return instance;
 }
 
 ErrorHandler.__dashjs_factory_name = 'ErrorHandler';
@@ -54066,7 +54067,7 @@ module.exports = exports['default'];
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
-  value: true
+    value: true
 });
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
@@ -54086,25 +54087,25 @@ var _fastDeepEqual2 = _interopRequireDefault(_fastDeepEqual);
  */
 function ObjectUtils() {
 
-  var instance = undefined;
+    var instance = undefined;
 
-  /**
-   * Returns true if objects are equal
-   * @return {boolean}
-   * @param {object} obj1
-   * @param {object} obj2
-   * @memberof module:ObjectUtils
-   * @instance
-   */
-  function areEqual(obj1, obj2) {
-    return (0, _fastDeepEqual2['default'])(obj1, obj2);
-  }
+    /**
+     * Returns true if objects are equal
+     * @return {boolean}
+     * @param {object} obj1
+     * @param {object} obj2
+     * @memberof module:ObjectUtils
+     * @instance
+     */
+    function areEqual(obj1, obj2) {
+        return (0, _fastDeepEqual2['default'])(obj1, obj2);
+    }
 
-  instance = {
-    areEqual: areEqual
-  };
+    instance = {
+        areEqual: areEqual
+    };
 
-  return instance;
+    return instance;
 }
 
 ObjectUtils.__dashjs_factory_name = 'ObjectUtils';

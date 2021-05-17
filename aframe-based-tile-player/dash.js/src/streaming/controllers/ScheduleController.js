@@ -324,6 +324,7 @@ function ScheduleController(config) {
                 }
                 if ((item.quality !== lastFragmentRequest.quality || item.adaptationIndex !== lastFragmentRequest.adaptationIndex) && trigger) {
                     eventBus.trigger(Events.QUALITY_CHANGE_RENDERED, {
+                        info: settings.get().info,
                         mediaType: type,
                         oldQuality: lastFragmentRequest.quality,
                         newQuality: item.quality

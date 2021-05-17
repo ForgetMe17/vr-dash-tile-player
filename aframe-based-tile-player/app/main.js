@@ -1,7 +1,6 @@
 var app = angular.module('DashPlayer', ['angular-flot']);
 
 app.controller('DashController', ['$scope','$interval', function ($scope, $interval) {
-
     $interval(function () {}, 1);
 
     //// Global variables for storage
@@ -26,6 +25,8 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
     $scope.playerContentScore = [];  // Data from monitor
     $scope.playerPastDownloadingQuality = [];  // Data from monitor's playerDownloadingQuality
     $scope.playerCatchUp = [];  // Data from playback controller
+    $scope.playerRenderingQuality = [];
+    $scope.playerPastRenderingQuality = [];
 
     $scope.playerBitrateList = [];  // Data from bitrate list
     $scope.requestList = [];  // Data from all HTTPRequests
@@ -33,7 +34,8 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
 
     $scope.selectedItem = {  // Save the selected media source
         type:"json",
-        value:"http://localhost/CMPVP907/aframeVP907.json"
+        // value:"http://localhost/CMPVP907/aframeVP907.json"
+        value:"http://localhost:5555/dataset/processed/aframedataset.json"
     };
     $scope.optionButton = "Show Options";  // Save the state of option button
     $scope.selectedRule = "FOVRule";  // Save the selected media source
@@ -113,6 +115,15 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
         }
     };
 
+    // viewer data
+    $scope.viewerData={}
+    $scope.totalThroughputList = []
+    $scope.normalizedtimeList = []
+    $scope.stallStartTime = 0
+    $scope.stallTimeList = {
+        timeline: [],
+        stalltime: []
+    }
 
     //// Global variables (flexible)
     $scope.mycanvas = {  // [For capturing each frame] Set the width and height of the canvases
@@ -124,7 +135,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
         "height":"150"
     };
     $scope.requestDuration = 3000;  // [For computing total throughput] Set the duration we consider (ms)
-    $scope.requestLayBack = 0;  // [For computing total throughput] Set the lay-back time for avoiding the on-going requests (ms)
+    $scope.requestLayBack = 500;  // [For computing total throughput] Set the lay-back time for avoiding the on-going requests (ms)
     $scope.rotateRatio = 0.1148;  // [For focusing FOV] Set the ratio of rotating when switching the angle of view
     $scope.playerBufferToKeep = 6;  // [For initializing mediaplayers] Allows you to modify the buffer that is kept in source buffer in seconds
     $scope.playerStableBufferTime = 6;  // [For initializing mediaplayers] The time that the internal buffer target will be set to post startup/seeks (NOT top quality)
@@ -264,13 +275,13 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                     data: $scope.chartState[type][id].data,
                     label: $scope.chartState[type][id].label,
                     color: $scope.chartState[type][id].color,
-                    yaxis: $scope.chartData_quality.length + 1,
+                    yaxis: 1,
                     type: type
                 };
                 $scope.chartData_quality.push(data);
-                $scope.chartOptions.yaxes.push({
-                    axisLabel: data.label
-                });
+                // $scope.chartOptions.yaxes.push({
+                //     axisLabel: data.label
+                // });
                 break;
             case "buffer":
                 var data = {
@@ -278,13 +289,13 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                     data: $scope.chartState[type][id].data,
                     label: $scope.chartState[type][id].label,
                     color: $scope.chartState[type][id].color,
-                    yaxis: $scope.chartData_buffer.length + 1,
+                    yaxis: 2,
                     type: type
                 };
                 $scope.chartData_buffer.push(data);
-                $scope.chartOptions.yaxes.push({
-                    axisLabel: data.label
-                });
+                // $scope.chartOptions.yaxes.push({
+                //     axisLabel: data.label
+                // });
                 break;
             case "throughput":
                 var data = {
@@ -292,13 +303,13 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                     data: $scope.chartState[type][id].data,
                     label: $scope.chartState[type][id].label,
                     color: $scope.chartState[type][id].color,
-                    yaxis: $scope.chartData_throughput.length + 1,
+                    yaxis: 3,
                     type: type
                 };
                 $scope.chartData_throughput.push(data);
-                $scope.chartOptions.yaxes.push({
-                    axisLabel: data.label
-                });
+                // $scope.chartOptions.yaxes.push({
+                //     axisLabel: data.label
+                // });
                 break;
         }
         $scope.chartOptions.legend.noColumns = Math.min($scope.chartData_quality.length, 5);
@@ -353,6 +364,11 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                     $scope.ssresults = JSON.parse(this.responseText);
                 });
             }
+
+            // get viewer info
+            getContents("http://localhost:5555/viewer_data/viewerData.json", function() {
+                $scope.viewerData = JSON.parse(this.responseText);
+            })
             document.getElementById('Link').style = "display: none;";
             document.getElementById('Render').style = "display: inline;";
         });
@@ -424,6 +440,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
     function buffer_empty_event(e) {
         $scope.buffer_empty_flag[e.info.count] = true;
         $scope.pause_all();
+        $scope.stallStartTime = new Date().getTime();
     }
 
     // Triggered when any player's buffer is loaded (again), which to start all the players when all-set.
@@ -438,8 +455,19 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             if ($scope.contents.audio && $scope.contents.audio != "" && $scope.buffer_empty_flag[$scope.playerCount] == true) {
                 return;
             }
+            if($scope.stallStartTime > 0){
+                $scope.stallTimeList['timeline'].push($scope.normalizedTime);
+                $scope.stallTimeList['stalltime'].push(new Date().getTime() - $scope.stallStartTime);
+                window.localStorage['stallTimeList'] = JSON.stringify($scope.stallTimeList);
+                $scope.stallStartTime = 0;
+            }
             $scope.play_all();
         }
+    }
+
+    function quality_change_rendered_event(e){
+        // console.log(e);
+        $scope.playerRenderingQuality[e.info.count] = e.newQuality;
     }
 
     // Initialize when loading the videos
@@ -486,7 +514,10 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                                 'enabled': true,
                                     'minDrift': $scope.playerMinDrift
                             }
-                        }
+                        },
+                        // 'debug': {
+                        //     'logLevel': dashjs.Debug.LOG_LEVEL_INFO
+                        // }
                     });
 
                     // Add my custom quality switch rule, look at [].js to know more about the structure of a custom rule
@@ -517,13 +548,14 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                     // Turn on the event listeners and add actions for triggers 
                     $scope.players[$scope.playerCount].on(dashjs.MediaPlayer.events["BUFFER_EMPTY"], buffer_empty_event);
                     $scope.players[$scope.playerCount].on(dashjs.MediaPlayer.events["BUFFER_LOADED"], buffer_loaded_event);
-
+                    $scope.players[$scope.playerCount].on(dashjs.MediaPlayer.events["QUALITY_CHANGE_RENDERED"], quality_change_rendered_event);
                     // Initializing
                     $scope.players[$scope.playerCount].initialize(video, url, false);
                     $scope.playerBufferLength[$scope.playerCount] = $scope.players[$scope.playerCount].getBufferLength();
                     $scope.playerAverageThroughput[$scope.playerCount] = $scope.players[$scope.playerCount].getAverageThroughput("video");
                     $scope.playerTime[$scope.playerCount] = $scope.players[$scope.playerCount].time();
                     $scope.playerDownloadingQuality[$scope.playerCount] = $scope.players[$scope.playerCount].getQualityFor("video");
+                    $scope.playerRenderingQuality[$scope.playerCount] = $scope.players[$scope.playerCount].getQualityFor("video");
                     $scope.playerFOVScore[$scope.playerCount] = 0;
                     $scope.playerContentScore[$scope.playerCount] = 0;
                     $scope.playerBitrateList[$scope.playerCount] = [];
@@ -559,6 +591,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             $scope.playerAverageThroughput[$scope.playerCount] = $scope.players[$scope.playerCount].getAverageThroughput("audio");
             $scope.playerTime[$scope.playerCount] = $scope.players[$scope.playerCount].time();
             $scope.playerDownloadingQuality[$scope.playerCount] = $scope.players[$scope.playerCount].getQualityFor("audio");
+            $scope.playerRenderingQuality[$scope.playerCount] = $scope.players[$scope.playerCount].getQualityFor("audio");
             $scope.playerCatchUp[$scope.playerCount] = false;
         }
 
@@ -580,6 +613,34 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                 // img.src = canvas.toDataURL("image/png");
             }
         }, $scope.IntervalOfCaptures);
+
+        setInterval(function () {
+            var control = document.getElementById( "frame" ).contentWindow.document.querySelector('a-camera').components['look-controls']
+            // console.log(control.pitchObject.rotation);
+            // console.log(control.yawObject.rotation);
+            // control.pitchObject.rotation.x += 0.1;
+            // control.yawObject.rotation.y += 0.1;
+            if(!control || !control.hasOwnProperty('pitchObject')) return;
+            var viewerArray = $scope.viewerData['user_10'];
+            let i=0;
+            for(;i<viewerArray.length-1; ++i){
+                if(viewerArray[i+1][0]>$scope.normalizedTime){break;}
+            }
+            control.pitchObject.rotation.x = viewerArray[i][1];
+            control.yawObject.rotation.y = viewerArray[i][2];
+            $scope.lat = control.pitchObject.rotation.x / Math.PI * 180
+            $scope.lon = 90 - control.yawObject.rotation.y / Math.PI * 180
+            $scope.lon > 360 ? $scope.lon = $scope.lon - 360 : null;
+            $scope.lon < 0 ? $scope.lon = $scope.lon + 360 : null;
+            $scope.lat > 90 ? $scope.lat = 90 : null;
+            $scope.lat < -90 ? $scope.lat = -90 : null;
+            // console.log(viewerArray[i]);
+            // console.log("rotation.x\t" + control.pitchObject.rotation.x / Math.PI * 180);
+            // console.log("scope.lat\t" + $scope.lat);
+            // console.log("rotation.y\t" + control.yawObject.rotation.y / Math.PI * 180);
+            // console.log("scope.lon\t" + $scope.lon);
+        }, 10);
+        
         document.getElementById('Load').style = "display: none;";
         document.getElementById('Play').style = "display: inline;";
     };
@@ -641,15 +702,19 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
         if (TotalDataInAnInterval != 0 && TotalTimeInAnInterval != 0) {
             $scope.totalThroughput = Math.round((8 * TotalDataInAnInterval) / (TotalTimeInAnInterval / 1000));  // bps
         }
+        $scope.totalThroughputList.push($scope.totalThroughput)
+        $scope.normalizedtimeList.push($scope.normalizedTime)
+        window.localStorage['throughput'] = $scope.totalThroughputList
+        window.localStorage['timeline'] = $scope.normalizedtimeList
     }
 
     // Compute QoE
     function computeQoE() {
-        if ($scope.playerPastDownloadingQuality.length == 0 || $scope.playerDownloadingQuality.length == 0) {
+        if ($scope.playerPastDownloadingQuality.length == 0 || $scope.playerRenderingQuality.length == 0) {
             $scope.totalQOE = NaN;
             $scope.viewerQOE = NaN;
             $scope.contentQOE = NaN;
-            $scope.playerPastDownloadingQuality = $scope.playerDownloadingQuality;
+            $scope.playerPastDownloadingQuality = $scope.playerRenderingQuality;
             return;
         }
         let pretotalQOE = 0;  // = Quality - miu * Stalls - lambda * Quality switches
@@ -674,12 +739,12 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             let divation = Math.acos((tile_z * view_z + tile_x * view_x + tile_y * view_y) / (Math.sqrt(tile_z * tile_z + tile_x * tile_x + tile_y * tile_y) * Math.sqrt(view_z * view_z + view_x * view_x + view_y * view_y))) * (180 / Math.PI);
             switch ($scope.qQOE) {
                 case 'linear':
-                    pretotalQOE = pretotalQOE + ($scope.playerBitrateList[i][$scope.playerDownloadingQuality[i]].bitrate - $scope.playerBitrateList[i][0].bitrate) - $scope.lambdaQOE * Math.abs($scope.playerBitrateList[i][$scope.playerDownloadingQuality[i]].bitrate - $scope.playerBitrateList[i][$scope.playerPastDownloadingQuality[i]].bitrate);
-                    previewerQOE = previewerQOE + (divation < 61 ? $scope.a1QOE : divation < 121 ? $scope.a2QOE : $scope.a3QOE) * (($scope.playerBitrateList[i][$scope.playerDownloadingQuality[i]].bitrate - $scope.playerBitrateList[i][0].bitrate) - $scope.lambdaQOE * Math.abs($scope.playerBitrateList[i][$scope.playerDownloadingQuality[i]].bitrate - $scope.playerBitrateList[i][$scope.playerPastDownloadingQuality[i]].bitrate));
+                    pretotalQOE = pretotalQOE + ($scope.playerBitrateList[i][$scope.playerRenderingQuality[i]].bitrate - $scope.playerBitrateList[i][0].bitrate) - $scope.lambdaQOE * Math.abs($scope.playerBitrateList[i][$scope.playerRenderingQuality[i]].bitrate - $scope.playerBitrateList[i][$scope.playerPastDownloadingQuality[i]].bitrate);
+                    previewerQOE = previewerQOE + (divation < 61 ? $scope.a1QOE : divation < 121 ? $scope.a2QOE : $scope.a3QOE) * (($scope.playerBitrateList[i][$scope.playerRenderingQuality[i]].bitrate - $scope.playerBitrateList[i][0].bitrate) - $scope.lambdaQOE * Math.abs($scope.playerBitrateList[i][$scope.playerRenderingQuality[i]].bitrate - $scope.playerBitrateList[i][$scope.playerPastDownloadingQuality[i]].bitrate));
                     break;
                 case 'log':
-                    pretotalQOE = pretotalQOE + Math.log(($scope.playerBitrateList[i][$scope.playerDownloadingQuality[i]].bitrate - $scope.playerBitrateList[i][0].bitrate) + 1) - $scope.lambdaQOE * Math.abs(Math.log($scope.playerBitrateList[i][$scope.playerDownloadingQuality[i]].bitrate + 1) - Math.log($scope.playerBitrateList[i][$scope.playerPastDownloadingQuality[i]].bitrate + 1));
-                    previewerQOE = previewerQOE + (divation < 61 ? $scope.a1QOE : divation < 121 ? $scope.a2QOE : $scope.a3QOE) * (Math.log(($scope.playerBitrateList[i][$scope.playerDownloadingQuality[i]].bitrate - $scope.playerBitrateList[i][0].bitrate) + 1) - $scope.lambdaQOE * Math.abs(Math.log($scope.playerBitrateList[i][$scope.playerDownloadingQuality[i]].bitrate + 1) - Math.log($scope.playerBitrateList[i][$scope.playerPastDownloadingQuality[i]].bitrate + 1)));
+                    pretotalQOE = pretotalQOE + Math.log(($scope.playerBitrateList[i][$scope.playerRenderingQuality[i]].bitrate - $scope.playerBitrateList[i][0].bitrate) + 1) - $scope.lambdaQOE * Math.abs(Math.log($scope.playerBitrateList[i][$scope.playerRenderingQuality[i]].bitrate + 1) - Math.log($scope.playerBitrateList[i][$scope.playerPastDownloadingQuality[i]].bitrate + 1));
+                    previewerQOE = previewerQOE + (divation < 61 ? $scope.a1QOE : divation < 121 ? $scope.a2QOE : $scope.a3QOE) * (Math.log(($scope.playerBitrateList[i][$scope.playerRenderingQuality[i]].bitrate - $scope.playerBitrateList[i][0].bitrate) + 1) - $scope.lambdaQOE * Math.abs(Math.log($scope.playerBitrateList[i][$scope.playerRenderingQuality[i]].bitrate + 1) - Math.log($scope.playerBitrateList[i][$scope.playerPastDownloadingQuality[i]].bitrate + 1)));
                     break;
                 default:
                     break;
@@ -688,7 +753,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
         $scope.totalQOE = pretotalQOE;
         $scope.viewerQOE = previewerQOE;
         $scope.contentQOE = precontentQOE;
-        $scope.playerPastDownloadingQuality = $scope.playerDownloadingQuality;
+        $scope.playerPastDownloadingQuality = $scope.playerRenderingQuality;
     }
 
     // Show the data in monitor
@@ -726,7 +791,8 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                     bufferlevel : $scope.playerBufferLength[i].toFixed(2) + " s",
                     throughput : $scope.playerAverageThroughput[i].toFixed(0)+ " kbps",
                     time : $scope.playerTime[i].toFixed(2) + " s",
-                    quality : $scope.playerDownloadingQuality[i].toFixed(0),
+                    // quality : $scope.playerDownloadingQuality[i].toFixed(0),
+                    quality : $scope.playerRenderingQuality[i].toFixed(0),
                     fovscore : $scope.playerFOVScore[i].toFixed(0),
                     playerContentScore : $scope.playerContentScore[i].toFixed(0),
                     totaltime : ($scope.playerBufferLength[i] + $scope.playerTime[i]).toFixed(2) + " s",
@@ -768,7 +834,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
         $scope.pointerY = event.clientY;
         document.getElementById('frame').contentDocument.addEventListener( 'pointermove', onPointerMove );
         document.getElementById('frame').contentDocument.addEventListener( 'pointerup', onPointerUp );
-        console.log("Pointer downs. lon: "+ $scope.lon + "; lat: " + $scope.lat + ".");
+        // console.log("Pointer downs. lon: "+ $scope.lon + "; lat: " + $scope.lat + ".");
     }
 
     function onPointerMove( event ) {
@@ -781,15 +847,14 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
         $scope.lat < -90 ? $scope.lat = -90 : null;
         $scope.pointerX = event.clientX;
         $scope.pointerY = event.clientY;
-        console.log("Pointer moves. lon: "+ $scope.lon + "; lat: " + $scope.lat + ".");
+        // console.log("Pointer moves. lon: "+ $scope.lon + "; lat: " + $scope.lat + ".");
     }
 
     function onPointerUp() {
         if ( event.isPrimary === false ) return;
         document.getElementById('frame').contentDocument.removeEventListener( 'pointermove', onPointerMove );
         document.getElementById('frame').contentDocument.removeEventListener( 'pointerup', onPointerUp );
-        console.log("Pointer ups. lon: "+ $scope.lon + "; lat: " + $scope.lat + ".");
+        // console.log("Pointer ups. lon: "+ $scope.lon + "; lat: " + $scope.lat + ".");
     }
-
 
 }]);
