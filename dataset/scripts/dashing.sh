@@ -59,24 +59,24 @@ funcDashingFace(){
 }
 
 
-# rm -rf $DASH_DIR
-# if [ -d $DASH_DIR ];then
-#     echo "Exists $BASE_DIR"
-#     exit 0
-# fi
+rm -rf $DASH_DIR
+if [ -d $DASH_DIR ];then
+    echo "Exists $BASE_DIR"
+    exit 0
+fi
 
-# mkdir -p $DASH_DIR/face0
-# mkdir -p $DASH_DIR/face1
-# mkdir -p $DASH_DIR/face2
-# mkdir -p $DASH_DIR/face3
-# mkdir -p $DASH_DIR/face4
-# mkdir -p $DASH_DIR/face5
+mkdir -p $DASH_DIR/face0
+mkdir -p $DASH_DIR/face1
+mkdir -p $DASH_DIR/face2
+mkdir -p $DASH_DIR/face3
+mkdir -p $DASH_DIR/face4
+mkdir -p $DASH_DIR/face5
 
 
 for i in $(seq 0 5) 
 do
     echo "------------------------"
-    # funcEncodingFace $i
+    funcEncodingFace $i
 done
 
 # autogen json file

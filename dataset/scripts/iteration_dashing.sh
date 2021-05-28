@@ -92,6 +92,8 @@ funcDashingOneParam(){
     echo "Getting segment size"
     python scripts/get_segment_size.py --gop $GOP --row $TILE_ROW --base_dirname $DASH_DIRNAME
 
+    rm -rf $DASH_DIR
+
 }
 
 for tile in $(seq 1 3)
