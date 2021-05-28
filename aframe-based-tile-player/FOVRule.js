@@ -31,21 +31,35 @@ function FOVRuleClass() {
 
         // Compute the bitrate according to FOV
         var info = abrController.getSettings().info;
-        var priorite = computeQualities(info);  // From 0 to 100
-        $scope.playerFOVScore[info.count] = priorite;
+        var priority = computeQualitiesOnTile(info);  // From 0 to 100
+        $scope.playerFOVScore[info.count] = priority;
 
         // Ask to switch to the bitrate according to FOV
         switchRequest.quality = 0;
-        switchRequest.reason = 'Always switching to the bitrate according to FOV';
+        // switchRequest.reason = 'Always switching to the bitrate according to FOV';
+        // switchRequest.reason = {
+        //     forceReplace: true
+        // };
         switchRequest.priority = SwitchRequest.PRIORITY.STRONG;
 
+        let prev_quality = switchRequest.quality;
         const bitrateList = abrController.getBitrateList(mediaInfo);  // List of all the selectable bitrates (A - Z)
         for (let i = bitrateList.length - 1; i >= 0; i--) {
-            if (priorite >= (i * 100 / bitrateList.length)) {
+            if (priority >= (i * 100 / bitrateList.length)) {
                 switchRequest.quality = i;
                 break;
             }
         }
+
+        // if(switchRequest.quality > prev_quality && !$scope.players[info.count].isPaused()){
+        //     var curr_time = $scope.players[info.count].getVideoElement().currentTime;
+        //     $scope.pause_all();
+        //     $scope.players[info.count].getVideoElement().currentTime = 0;
+        //     setTimeout(function () {
+        //         $scope.players[info.count].getVideoElement().currentTime = curr_time;
+        //         $scope.play_all();
+        //         }, 10)
+        // }
 
         return switchRequest;
     }
@@ -196,6 +210,24 @@ function FOVRuleClass() {
 
         return 0;
     }
+    // 计算每个tile的质量，存在Bug，需要修改
+    function computeQualitiesOnTile(info) {
+        let r = Math.sqrt(info.location.x * info.location.x + info.location.y * info.location.y + info.location.z * info.location.z);
+        let tile_theta = Math.acos(info.location.y / (r == 0 ? 1 : r));
+        let tile_phi = Math.atan(info.location.x / (info.location.z == 0 ? 1 : info.location.z));
+        let view_theta = (90 - $scope.lat) * (Math.PI / 180);
+        let view_phi = (270 - $scope.lon >= 0 ? 270 - $scope.lon : 270 - $scope.lon + 360) * (Math.PI / 180);
+        let tile_z = Math.sin(tile_theta) * Math.cos(tile_phi);
+        tile_z = info.location.z < 0 ? tile_z < 0 ? tile_z : -tile_z : tile_z;
+        let tile_x = Math.sin(tile_theta) * Math.sin(tile_phi);
+        let tile_y = Math.cos(tile_theta);
+        let view_z = Math.sin(view_theta) * Math.cos(view_phi);
+        let view_x = Math.sin(view_theta) * Math.sin(view_phi);
+        let view_y = Math.cos(view_theta);
+        let divation = Math.acos((tile_z * view_z + tile_x * view_x + tile_y * view_y) / (Math.sqrt(tile_z * tile_z + tile_x * tile_x + tile_y * tile_y) * Math.sqrt(view_z * view_z + view_x * view_x + view_y * view_y))) * (180 / Math.PI);
+        if(divation < 61) return 100
+        return 0
+}
 
     instance = {
         getMaxIndex: getMaxIndex,

@@ -6,7 +6,7 @@
 
 		<meta charset="utf-8"/>
 		<title>ball_video</title>
-		
+		  
 		<script src="./aframe/dist/aframe-master.js"></script>
 
 		<style>
@@ -22,59 +22,49 @@
 		<a-scene>
 
 			<a-camera></a-camera>
+      <a-entity tracked-controls="controller: 0; idPrefix: Vive"></a-entity>
 
 			<a-assets>
-			  	<video id="video_0" preload="auto" width="960" height="960" autoplay loop="false" crossOrigin="anonymous" muted></video>
-				<video id="video_1" preload="auto" width="960" height="960" autoplay loop="false" crossOrigin="anonymous" muted></video>
-				<video id="video_2" preload="auto" width="960" height="960" autoplay loop="false" crossOrigin="anonymous" muted></video>
-				<video id="video_3" preload="auto" width="960" height="960" autoplay loop="false" crossOrigin="anonymous" muted></video>
-				<video id="video_4" preload="auto" width="960" height="960" autoplay loop="false" crossOrigin="anonymous" muted></video>
-				<video id="video_5" preload="auto" width="960" height="960" autoplay loop="false" crossOrigin="anonymous" muted></video>
-				<audio id="audio"></audio>  
+<video id="video_0" preload="auto" width="720" height="720" autoplay loop="false" crossOrigin="anonymous" muted>
+            </video><video id="video_1" preload="auto" width="720" height="720" autoplay loop="false" crossOrigin="anonymous" muted>
+            </video><video id="video_2" preload="auto" width="720" height="720" autoplay loop="false" crossOrigin="anonymous" muted>
+            </video><video id="video_3" preload="auto" width="720" height="720" autoplay loop="false" crossOrigin="anonymous" muted>
+            </video><video id="video_4" preload="auto" width="720" height="720" autoplay loop="false" crossOrigin="anonymous" muted>
+            </video><video id="video_5" preload="auto" width="720" height="720" autoplay loop="false" crossOrigin="anonymous" muted>
+            </video>
 			</a-assets>
 	  
-			<a-entity material="shader: flat; src: #video_0"
-					  geometry="primitive: plane; width: 960; height: 960;"
-					  position="480 0 0"
-					  rotation="0 270 0"
-					  visible="true">
-			</a-entity>
-			<a-entity material="shader: flat; src: #video_1"
-					  geometry="primitive: plane; width: 960; height: 960;"
-					  position="-480 0 0"
-					  rotation="0 90 0"
-					  visible="true">
-			</a-entity>
-			<a-entity material="shader: flat; src: #video_2"
-					  geometry="primitive: plane; width: 960; height: 960;"
-					  position="0 480 0"
-					  rotation="90 0 0"
-					  visible="true">
-			</a-entity>
-			<a-entity material="shader: flat; src: #video_3"
-					  geometry="primitive: plane; width: 960; height: 960;"
-					  position="0 -480 0"
-					  rotation="-90 0 0"
-					  visible="true">
-			</a-entity>
-			<a-entity material="shader: flat; src: #video_4"
-					  geometry="primitive: plane; width: 960; height: 960;"
-					  position="0 0 -480"
-					  rotation="0 0 0"
-					  visible="true">
-			</a-entity>
-			<a-entity material="shader: flat; src: #video_5"
-					  geometry="primitive: plane; width: 960; height: 960;"
-					  position="0 0 480"
-					  rotation="0 180 0"
-					  visible="true">
-			</a-entity>
-			<a-entity material="shader: flat; src: #audio"
-					  geometry="primitive: plane; width: 0; height: 0;"
-					  position="0 0 0"
-					  rotation="0 0 0"
-					  visible="true">
-			</a-entity>
+<a-entity material="shader: flat; src: #video_0" 
+            geometry="primitive: plane; width: 720; height: 720;"
+                        position="360 0 0"
+                        rotation="0 270 0"
+                        visible="true">
+                        </a-entity>	<a-entity material="shader: flat; src: #video_1" 
+            geometry="primitive: plane; width: 720; height: 720;"
+                        position="-360 0 0"
+                        rotation="0 90 0"
+                        visible="true">
+                        </a-entity>	<a-entity material="shader: flat; src: #video_2" 
+            geometry="primitive: plane; width: 720; height: 720;"
+                        position="0 360 0"
+                        rotation="90 0 0"
+                        visible="true">
+                        </a-entity>	<a-entity material="shader: flat; src: #video_3" 
+            geometry="primitive: plane; width: 720; height: 720;"
+                        position="0 -360 0"
+                        rotation="-90 0 0"
+                        visible="true">
+                        </a-entity>	<a-entity material="shader: flat; src: #video_4" 
+            geometry="primitive: plane; width: 720; height: 720;"
+                        position="0 0 -360"
+                        rotation="0 0 0"
+                        visible="true">
+                        </a-entity>	<a-entity material="shader: flat; src: #video_5" 
+            geometry="primitive: plane; width: 720; height: 720;"
+                        position="0 0 360"
+                        rotation="0 180 0"
+                        visible="true">
+                        </a-entity>	
 
 		</a-scene>
         

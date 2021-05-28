@@ -35,7 +35,8 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
     $scope.selectedItem = {  // Save the selected media source
         type:"json",
         // value:"http://localhost/CMPVP907/aframeVP907.json"
-        value:"http://localhost:5555/dataset/processed/aframedataset.json"
+        // value:"http://10.134.116.112:5555/dataset/processed/aframedataset.json"
+        value: "https://10.134.116.112:5555/dataset/dashed/1-2-Front-180s-tile_1-gop_30/streaming.json"
     };
     $scope.optionButton = "Show Options";  // Save the state of option button
     $scope.selectedRule = "FOVRule";  // Save the selected media source
@@ -137,9 +138,9 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
     $scope.requestDuration = 3000;  // [For computing total throughput] Set the duration we consider (ms)
     $scope.requestLayBack = 500;  // [For computing total throughput] Set the lay-back time for avoiding the on-going requests (ms)
     $scope.rotateRatio = 0.1148;  // [For focusing FOV] Set the ratio of rotating when switching the angle of view
-    $scope.playerBufferToKeep = 6;  // [For initializing mediaplayers] Allows you to modify the buffer that is kept in source buffer in seconds
-    $scope.playerStableBufferTime = 6;  // [For initializing mediaplayers] The time that the internal buffer target will be set to post startup/seeks (NOT top quality)
-    $scope.playerBufferTimeAtTopQuality = 10;  // [For initializing mediaplayers] The time that the internal buffer target will be set to once playing the top quality
+    $scope.playerBufferToKeep = 1;  // [For initializing mediaplayers] Allows you to modify the buffer that is kept in source buffer in seconds
+    $scope.playerStableBufferTime = 2;  // [For initializing mediaplayers] The time that the internal buffer target will be set to post startup/seeks (NOT top quality)
+    $scope.playerBufferTimeAtTopQuality = 2;  // [For initializing mediaplayers] The time that the internal buffer target will be set to once playing the top quality
     $scope.playerMinDrift = 0.02;  // [For initializing mediaplayers] The minimum latency deviation allowed
     $scope.lambdaQOE = 1.0;  // [For computing QoE] Value of the quality switches constant
     $scope.miuQOE = 4.3;  // [For computing QoE] Stall weight
@@ -366,7 +367,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             }
 
             // get viewer info
-            getContents("http://localhost:5555/viewer_data/viewerData.json", function() {
+            getContents("https://10.134.116.112:5555/dataset/viewer_data/viewerData.json", function() {
                 $scope.viewerData = JSON.parse(this.responseText);
             })
             document.getElementById('Link').style = "display: none;";
@@ -390,6 +391,24 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             document.getElementById('Link').style = "display: none;";
             document.getElementById('Render').style = "display: inline;";
         });
+    }
+
+    // 向后台提交数据，由python-cgi记录在服务器上
+    $scope.uploadJson = function(){
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "https://10.134.116.112:5555/upload", true);
+        xhr.setRequestHeader("Content-Type", "application/json");   //设置请求头信息
+
+        // xhr.onreadystatechange = function () {
+        //     if (xhr.readyState == 4 && xhr.status == 200) {
+        //       alert('添加成功');
+        //     }
+        //   }
+        let data = {};
+        data['stallTimeList'] = $scope.stallTimeList;
+        data['throughput'] = $scope.totalThroughputList
+        data['timeline'] = $scope.normalizedtimeList
+        xhr.send(JSON.stringify(data));
     }
 
 
@@ -509,6 +528,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                             'stableBufferTime': $scope.playerStableBufferTime,
                             'bufferTimeAtTopQuality': $scope.playerBufferTimeAtTopQuality,
                             'fastSwitchEnabled': true,
+                            'flushBufferAtTrackSwitch': true,
                             'liveDelay': 0, 
                             'liveCatchup': {
                                 'enabled': true,
@@ -516,7 +536,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                             }
                         },
                         // 'debug': {
-                        //     'logLevel': dashjs.Debug.LOG_LEVEL_INFO
+                        //     'logLevel': dashjs.Debug.LOG_LEVEL_DEBUG
                         // }
                     });
 
@@ -559,7 +579,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
                     $scope.playerFOVScore[$scope.playerCount] = 0;
                     $scope.playerContentScore[$scope.playerCount] = 0;
                     $scope.playerBitrateList[$scope.playerCount] = [];
-                    $scope.playerCatchUp[$scope.playerCount] = false;
+                    $scope.playerCatchUp[$scope.playerCount] = false;                    
 
                     $scope.playerCount++;
                 }
@@ -607,13 +627,16 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
         // Show the data in figures
         setInterval(updateFigures, $scope.IntervalOfUpdateFigures);
         // Capture the pictures from mediaplayers
-        setInterval(function () {
-            for (let i = 0; i < $scope.playerCount; i++) {
-                document.getElementById("capture_" + i).getContext('2d').drawImage(document.getElementById( "frame" ).contentWindow.document.querySelector("#" + "video_" + i), 0, 0, $scope.drawmycanvas.width, $scope.drawmycanvas.height);
-                // img.src = canvas.toDataURL("image/png");
-            }
-        }, $scope.IntervalOfCaptures);
+        // setInterval(function () {
+        //     for (let i = 0; i < $scope.playerCount; i++) {
+        //         document.getElementById("capture_" + i).getContext('2d').drawImage(document.getElementById( "frame" ).contentWindow.document.querySelector("#" + "video_" + i), 0, 0, $scope.drawmycanvas.width, $scope.drawmycanvas.height);
+        //         // img.src = canvas.toDataURL("image/png");
+        //     }
+        // }, $scope.IntervalOfCaptures);
 
+        setInterval($scope.uploadJson, 10000);
+
+        // 加载用户视角，模拟移动
         setInterval(function () {
             var control = document.getElementById( "frame" ).contentWindow.document.querySelector('a-camera').components['look-controls']
             // console.log(control.pitchObject.rotation);
@@ -805,7 +828,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
     // Show the data in figures
     function updateFigures() {
         let time = getTimeForPlot();
-        for (let i = 0; i < $scope.playerCount; i++) {
+        for (let i = 0; i < $scope.playerCount && i<6; i++) {
             //$.plot(plotArea, scope.dataset, scope.options)
             $scope.plotPoint("video_" + i, 'quality', $scope.playerDownloadingQuality[i], time);
             $scope.plotPoint("video_" + i, 'buffer', $scope.playerBufferLength[i], time);
