@@ -113,7 +113,7 @@ for face in range(0, 6):
 
 json_file = {}
 json_file['tiles'] = face_list
-json_file['baseUrl'] = "https://10.134.116.112:5555/dataset/" + base_dir + '/'
+json_file['baseUrl'] = "http://10.134.116.112:5555/dataset/" + base_dir + '/'
 json_file['face'] = 6
 json_file['row'] = num_row
 json_file['col'] = num_col

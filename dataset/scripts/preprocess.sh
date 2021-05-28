@@ -22,35 +22,35 @@ mkdir -p $BASE_DIR/raw_mp4
 # cmp video out path
 CMP_VIDEO="$BASE_DIR/raw_mp4/$(basename $ERP_VIDEO .mp4)-CMP.mp4"
 
-# # convert erp to cmp
-# echo "Converting erp to cmp"
-# ffmpeg -i $ERP_VIDEO -vf v360=e:c3x2:cubic:w=$V_WIDTH:h=$V_HEIGHT:out_pad=0 \
-# -c:v h264_nvenc -b:v 0 -keyint_min 30 -g 30 -sc_threshold 0 -an $CMP_VIDEO -loglevel quiet
+# convert erp to cmp
+echo "Converting erp to cmp"
+ffmpeg -i $ERP_VIDEO -vf v360=e:c3x2:cubic:w=$V_WIDTH:h=$V_HEIGHT:out_pad=0 \
+-c:v h264_nvenc -b:v 0 -keyint_min 30 -g 30 -sc_threshold 0 -an $CMP_VIDEO -loglevel quiet
 
-# # cut into 6 faces
-# echo "Cutting face 0"
-# ffmpeg -y -i $CMP_VIDEO -vf "crop=w=in_w/3:h=in_h/2:x=0*(in_w/3):y=0*(in_h/2)" \
-# -c:v h264_nvenc -keyint_min 30 -g 30 -sc_threshold 0 -an $BASE_DIR/face0/face0.mp4 -loglevel quiet
+# cut into 6 faces
+echo "Cutting face 0"
+ffmpeg -y -i $CMP_VIDEO -vf "crop=w=in_w/3:h=in_h/2:x=0*(in_w/3):y=0*(in_h/2)" \
+-c:v h264_nvenc -keyint_min 30 -g 30 -sc_threshold 0 -an $BASE_DIR/face0/face0.mp4 -loglevel quiet
 
-# echo "Cutting face 1"
-# ffmpeg -y -i $CMP_VIDEO -vf "crop=w=in_w/3:h=in_h/2:x=1*(in_w/3):y=0*(in_h/2)" \
-# -c:v h264_nvenc -keyint_min 30 -g 30 -sc_threshold 0 -an $BASE_DIR/face1/face1.mp4 -loglevel quiet
+echo "Cutting face 1"
+ffmpeg -y -i $CMP_VIDEO -vf "crop=w=in_w/3:h=in_h/2:x=1*(in_w/3):y=0*(in_h/2)" \
+-c:v h264_nvenc -keyint_min 30 -g 30 -sc_threshold 0 -an $BASE_DIR/face1/face1.mp4 -loglevel quiet
 
-# echo "Cutting face 2"
-# ffmpeg -y -i $CMP_VIDEO -vf "crop=w=in_w/3:h=in_h/2:x=2*(in_w/3):y=0*(in_h/2)" \
-# -c:v h264_nvenc -keyint_min 30 -g 30 -sc_threshold 0 -an $BASE_DIR/face2/face2.mp4 -loglevel quiet
+echo "Cutting face 2"
+ffmpeg -y -i $CMP_VIDEO -vf "crop=w=in_w/3:h=in_h/2:x=2*(in_w/3):y=0*(in_h/2)" \
+-c:v h264_nvenc -keyint_min 30 -g 30 -sc_threshold 0 -an $BASE_DIR/face2/face2.mp4 -loglevel quiet
 
-# echo "Cutting face 3"
-# ffmpeg -y -i $CMP_VIDEO -vf "crop=w=in_w/3:h=in_h/2:x=0*(in_w/3):y=1*(in_h/2)" \
-# -c:v h264_nvenc -keyint_min 30 -g 30 -sc_threshold 0 -an $BASE_DIR/face3/face3.mp4 -loglevel quiet
+echo "Cutting face 3"
+ffmpeg -y -i $CMP_VIDEO -vf "crop=w=in_w/3:h=in_h/2:x=0*(in_w/3):y=1*(in_h/2)" \
+-c:v h264_nvenc -keyint_min 30 -g 30 -sc_threshold 0 -an $BASE_DIR/face3/face3.mp4 -loglevel quiet
 
-# echo "Cutting face 4"
-# ffmpeg -y -i $CMP_VIDEO -vf "crop=w=in_w/3:h=in_h/2:x=1*(in_w/3):y=1*(in_h/2)" \
-# -c:v h264_nvenc -keyint_min 30 -g 30 -sc_threshold 0 -an $BASE_DIR/face4/face4.mp4 -loglevel quiet
+echo "Cutting face 4"
+ffmpeg -y -i $CMP_VIDEO -vf "crop=w=in_w/3:h=in_h/2:x=1*(in_w/3):y=1*(in_h/2)" \
+-c:v h264_nvenc -keyint_min 30 -g 30 -sc_threshold 0 -an $BASE_DIR/face4/face4.mp4 -loglevel quiet
 
-# echo "Cutting face 5"
-# ffmpeg.exe -y -i $CMP_VIDEO -vf "crop=w=in_w/3:h=in_h/2:x=2*(in_w/3):y=1*(in_h/2)" \
-# -c:v h264_nvenc -keyint_min 30 -g 30 -sc_threshold 0 -an $BASE_DIR/face5/face5.mp4 -loglevel quiet
+echo "Cutting face 5"
+ffmpeg.exe -y -i $CMP_VIDEO -vf "crop=w=in_w/3:h=in_h/2:x=2*(in_w/3):y=1*(in_h/2)" \
+-c:v h264_nvenc -keyint_min 30 -g 30 -sc_threshold 0 -an $BASE_DIR/face5/face5.mp4 -loglevel quiet
 
 # # muti bitrate version
 # echo "Encoding face 0 at crf 60"

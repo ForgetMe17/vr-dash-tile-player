@@ -36,7 +36,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
         type:"json",
         // value:"http://localhost/CMPVP907/aframeVP907.json"
         // value:"http://10.134.116.112:5555/dataset/processed/aframedataset.json"
-        value: "https://10.134.116.112:5555/dataset/dashed/1-2-Front-180s-tile_1-gop_30/streaming.json"
+        value: "http://10.134.116.112:5555/dataset/dashed/1-2-Front-180s-tile_1-gop_30/streaming.json"
     };
     $scope.optionButton = "Show Options";  // Save the state of option button
     $scope.selectedRule = "FOVRule";  // Save the selected media source
@@ -367,7 +367,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
             }
 
             // get viewer info
-            getContents("https://10.134.116.112:5555/dataset/viewer_data/viewerData.json", function() {
+            getContents("http://10.134.116.112:5555/dataset/viewer_data/viewerData.json", function() {
                 $scope.viewerData = JSON.parse(this.responseText);
             })
             document.getElementById('Link').style = "display: none;";
@@ -396,7 +396,7 @@ app.controller('DashController', ['$scope','$interval', function ($scope, $inter
     // 向后台提交数据，由python-cgi记录在服务器上
     $scope.uploadJson = function(){
         var xhr = new XMLHttpRequest();
-        xhr.open("POST", "https://10.134.116.112:5555/upload", true);
+        xhr.open("POST", "http://10.134.116.112:5555/upload", true);
         xhr.setRequestHeader("Content-Type", "application/json");   //设置请求头信息
 
         // xhr.onreadystatechange = function () {
